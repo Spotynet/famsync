@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# === Django (backend) ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+*.egg
+.env
+.venv/
+venv/
+env/
+*.log
+local_settings.py
+db.sqlite3
+media/
+staticfiles/
+
+# === React Native / Expo (mobile) ===
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+*.tsbuildinfo
+.env.local
+.env.*.local
+
+# Metro
+.metro-health-check*
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# Build / cache
+web-build/
+.expo/
+*.tsbuildinfo
