@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BookEase &mdash; Book Your Appointment in Seconds</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --c-bg:        #ffffff;
+      --c-surface:   #f8f9fb;
+      --c-border:    #e8eaed;
+      --c-text:      #0f0f10;
+      --c-muted:     #6b7280;
+      --c-accent:    #4f46e5;
+      --c-accent-lt: #ede9fe;
+      --c-accent-dk: #3730a3;
+      --c-green:     #10b981;
+      --c-red:       #ef4444;
+      --radius:      14px;
+      --radius-lg:   22px;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --shadow-md:   0 4px 16px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.04);
+      --shadow-lg:   0 20px 48px rgba(79,70,229,.12), 0 8px 20px rgba(0,0,0,.06);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--c-bg);
+      color: var(--c-text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── UTILITIES ─────────────────────────────────────── */
+    .container { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 20px; }
+    .section    { padding: 80px 0; }
+    .section--alt { background: var(--c-surface); }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--c-accent-lt); color: var(--c-accent);
+      font-size: 12px; font-weight: 600; letter-spacing: .04em;
+      text-transform: uppercase; padding: 5px 12px; border-radius: 99px;
+      margin-bottom: 18px;
+    }
+    .badge svg { width: 13px; height: 13px; }
+
+    .section-label {
+      font-size: 13px; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--c-accent);
+      margin-bottom: 10px;
+    }
+
+    h2.section-title {
+      font-size: clamp(26px, 4vw, 38px); font-weight: 800;
+      line-height: 1.2; letter-spacing: -.02em;
+      color: var(--c-text); margin-bottom: 14px;
+    }
+    .section-sub {
+      font-size: 17px; color: var(--c-muted); max-width: 520px;
+      line-height: 1.7;
+    }
+    .section-header { margin-bottom: 52px; }
+    .section-header--center { text-align: center; }
+    .section-header--center .section-sub { margin: 0 auto; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      padding: 13px 26px; border-radius: 10px; border: none;
+      cursor: pointer; text-decoration: none; transition: all .18s;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--c-accent); color: #fff;
+      box-shadow: 0 4px 14px rgba(79,70,229,.35);
+    }
+    .btn-primary:hover { background: var(--c-accent-dk); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,70,229,.4); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-ghost {
+      background: transparent; color: var(--c-text); border: 1.5px solid var(--c-border);
+    }
+    .btn-ghost:hover { border-color: var(--c-accent); color: var(--c-accent); }
+    .btn-lg { font-size: 16px; padding: 15px 32px; border-radius: 12px; }
+    .btn-xl { font-size: 17px; padding: 17px 36px; border-radius: 13px; }
+
+    /* ─── NAV ────────────────────────────────────────────── */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,.88); backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--c-border);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 9px;
+      font-weight: 800; font-size: 19px; color: var(--c-text); text-decoration: none;
+    }
+    .nav-logo-icon {
+      width: 34px; height: 34px; background: var(--c-accent); border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nav-logo-icon svg { width: 18px; height: 18px; color: #fff; }
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a {
+      font-size: 14px; font-weight: 500; color: var(--c-muted);
+      text-decoration: none; transition: color .15s;
+    }
+    .nav-links a:hover { color: var(--c-text); }
+    .nav-actions { display: flex; gap: 10px; align-items: center; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-actions .btn-ghost { display: none; }
+    }
+
+    /* ─── HERO ───────────────────────────────────────────── */
+    .hero {
+      padding: 80px 0 60px;
+      background: linear-gradient(160deg, #faf9ff 0%, #ffffff 60%);
+      overflow: hidden; position: relative;
+    }
+    .hero::before {
+      content: ''; position: absolute; top: -200px; right: -200px;
+      width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(79,70,229,.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-inner {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 60px; align-items: center;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--c-accent-lt); color: var(--c-accent);
+      font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 99px;
+      margin-bottom: 22px;
+    }
+    .hero-eyebrow .dot { width: 6px; height: 6px; background: var(--c-green); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+
+    h1 {
+      font-size: clamp(36px, 5.5vw, 58px); font-weight: 900;
+      line-height: 1.08; letter-spacing: -.03em; margin-bottom: 20px;
+    }
+    h1 .accent { color: var(--c-accent); }
+    .hero-sub {
+      font-size: 18px; color: var(--c-muted); line-height: 1.7;
+      margin-bottom: 36px; max-width: 440px;
+    }
+    .hero-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .hero-trust {
+      margin-top: 40px; display: flex; align-items: center; gap: 14px;
+    }
+    .hero-avatars { display: flex; }
+    .hero-avatars img, .avatar-placeholder {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 2px solid #fff; margin-left: -8px; object-fit: cover;
+    }
+    .avatar-placeholder {
+      background: var(--c-accent-lt); display: flex; align-items: center;
+      justify-content: center; font-size: 12px; font-weight: 700; color: var(--c-accent);
+    }
+    .hero-trust-text { font-size: 13px; color: var(--c-muted); }
+    .hero-trust-text strong { color: var(--c-text); }
+    .stars { color: #f59e0b; font-size: 13px; letter-spacing: 1px; }
+
+    /* Hero visual */
+    .hero-visual { position: relative; }
+    .hero-card {
+      background: #fff; border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 24px;
+      box-shadow: var(--shadow-lg);
+    }
+    .hc-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .hc-title { font-size: 15px; font-weight: 700; }
+    .hc-nav { display: flex; gap: 6px; }
+    .hc-nav button {
+      width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--c-border);
+      background: #fff; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; color: var(--c-muted); font-size: 13px;
+      transition: all .15s;
+    }
+    .hc-nav button:hover { background: var(--c-accent); color: #fff; border-color: var(--c-accent); }
+
+    .cal-days-header {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      text-align: center; margin-bottom: 8px;
+    }
+    .cal-days-header span { font-size: 11px; font-weight: 600; color: var(--c-muted); padding: 4px 0; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+    .cal-day {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 500; border-radius: 8px; cursor: pointer;
+      transition: all .15s; color: var(--c-text);
+    }
+    .cal-day:hover { background: var(--c-accent-lt); color: var(--c-accent); }
+    .cal-day.empty { cursor: default; }
+    .cal-day.today { background: var(--c-accent); color: #fff; font-weight: 700; }
+    .cal-day.selected { background: var(--c-accent-lt); color: var(--c-accent); font-weight: 700; border: 2px solid var(--c-accent); }
+    .cal-day.has-slot::after {
+      content: ''; display: block; width: 4px; height: 4px; border-radius: 50%;
+      background: var(--c-green); position: absolute; bottom: 3px;
+    }
+    .cal-day.has-slot { position: relative; }
+    .cal-day.muted { color: #d1d5db; cursor: default; }
+
+    .time-slots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .time-slot {
+      padding: 7px 14px; border-radius: 8px; border: 1.5px solid var(--c-border);
+      font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s;
+      background: #fff;
+    }
+    .time-slot:hover { border-color: var(--c-accent); color: var(--c-accent); }
+    .time-slot.active { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
+    .time-slot.full { background: var(--c-surface); color: #d1d5db; cursor: not-allowed; border-color: var(--c-border); }
+
+    .hc-footer { margin-top: 20px; }
+
+    /* Floating badges */
+    .float-badge {
+      position: absolute; background: #fff; border: 1px solid var(--c-border);
+      border-radius: 12px; padding: 10px 14px; box-shadow: var(--shadow-md);
+      display: flex; align-items: center; gap: 10px;
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)} }
+    .float-badge:nth-child(2) { animation-delay: .8s; }
+    .float-badge:nth-child(3) { animation-delay: 1.6s; }
+    .float-badge.confirmed { top: -18px; right: -12px; }
+    .float-badge.remind    { bottom: 20px; left: -24px; }
+    .float-badge-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .float-badge-icon.green { background: #d1fae5; color: var(--c-green); }
+    .float-badge-icon.purple { background: var(--c-accent-lt); color: var(--c-accent); }
+    .float-badge-icon svg { width: 17px; height: 17px; }
+    .float-badge-info { line-height: 1.3; }
+    .float-badge-info strong { font-size: 12px; font-weight: 700; display: block; color: var(--c-text); }
+    .float-badge-info span { font-size: 11px; color: var(--c-muted); }
+
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-visual { order: -1; }
+      .float-badge.remind { display: none; }
+      .float-badge.confirmed { top: -12px; right: 8px; }
+    }
+    @media (max-width: 600px) {
+      .hero { padding: 50px 0 40px; }
+      .float-badge { display: none; }
+    }
+
+    /* ─── HOW IT WORKS ───────────────────────────────────── */
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; position: relative;
+    }
+    .steps-grid::before {
+      content: '';
+      position: absolute; top: 28px; left: calc(16.66% + 12px);
+      right: calc(16.66% + 12px); height: 2px;
+      background: linear-gradient(90deg, var(--c-accent) 0%, var(--c-accent-lt) 100%);
+      z-index: 0;
+    }
+    .step-card {
+      background: #fff; border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 32px 24px 28px;
+      text-align: center; position: relative; z-index: 1;
+      transition: all .2s;
+    }
+    .step-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    .step-num {
+      width: 56px; height: 56px; border-radius: 16px;
+      background: var(--c-accent); color: #fff;
+      font-size: 20px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px; position: relative;
+    }
+    .step-num::after {
+      content: ''; position: absolute; inset: -4px;
+      border-radius: 18px; border: 2px solid var(--c-accent-lt);
+    }
+    .step-icon { font-size: 28px; margin-bottom: 12px; }
+    .step-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .step-desc { font-size: 14px; color: var(--c-muted); line-height: 1.6; }
+
+    @media (max-width: 680px) {
+      .steps-grid { grid-template-columns: 1fr; }
+      .steps-grid::before { display: none; }
+    }
+
+    /* ─── SERVICES ───────────────────────────────────────── */
+    .services-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .service-card {
+      background: #fff; border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 24px;
+      cursor: pointer; transition: all .2s;
+      display: flex; flex-direction: column;
+    }
+    .service-card:hover {
+      border-color: var(--c-accent); box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .service-card:hover .book-link { color: var(--c-accent-dk); }
+    .service-emoji { font-size: 32px; margin-bottom: 14px; }
+    .service-name { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .service-desc { font-size: 13px; color: var(--c-muted); margin-bottom: 16px; flex: 1; line-height: 1.6; }
+    .service-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 16px; border-top: 1px solid var(--c-border);
+    }
+    .service-duration {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 13px; color: var(--c-muted); font-weight: 500;
+    }
+    .service-duration svg { width: 14px; height: 14px; }
+    .service-price { font-size: 17px; font-weight: 800; color: var(--c-text); }
+    .book-link {
+      font-size: 13px; font-weight: 600; color: var(--c-accent);
+      text-decoration: none; margin-top: 14px;
+      display: flex; align-items: center; gap: 4px; transition: color .15s;
+    }
+
+    /* ─── BOOKING SECTION ────────────────────────────────── */
+    .booking-section {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+      padding: 80px 0; overflow: hidden; position: relative;
+    }
+    .booking-section::before {
+      content: ''; position: absolute;
+      width: 500px; height: 500px; border-radius: 50%;
+      background: rgba(255,255,255,.03); top: -200px; right: -100px;
+      pointer-events: none;
+    }
+    .booking-section .section-label { color: #a5b4fc; }
+    .booking-section h2.section-title { color: #fff; }
+    .booking-section .section-sub { color: #a5b4fc; }
+    .booking-inner {
+      display: grid; grid-template-columns: 1fr 1.2fr;
+      gap: 60px; align-items: start;
+    }
+    .booking-info { color: #fff; }
+    .booking-features { margin-top: 36px; display: flex; flex-direction: column; gap: 16px; }
+    .booking-feature {
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .bf-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(255,255,255,.1); display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; font-size: 17px;
+    }
+    .bf-text strong { display: block; font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+    .bf-text span { font-size: 13px; color: #a5b4fc; line-height: 1.5; }
+
+    .booking-widget {
+      background: #fff; border-radius: var(--radius-lg);
+      box-shadow: 0 32px 64px rgba(0,0,0,.25);
+      overflow: hidden;
+    }
+    .bw-header {
+      background: var(--c-accent); padding: 20px 24px;
+      color: #fff;
+    }
+    .bw-header-top {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 4px;
+    }
+    .bw-header-top svg { width: 20px; height: 20px; }
+    .bw-header-title { font-size: 16px; font-weight: 700; }
+    .bw-header-sub { font-size: 13px; opacity: .8; }
+
+    .bw-body { padding: 24px; }
+    .bw-step-indicator {
+      display: flex; gap: 6px; margin-bottom: 22px;
+    }
+    .bw-step {
+      flex: 1; height: 3px; border-radius: 2px;
+      background: var(--c-border);
+    }
+    .bw-step.done { background: var(--c-accent); }
+    .bw-step.active { background: var(--c-accent); opacity: .5; }
+
+    .bw-label { font-size: 12px; font-weight: 600; color: var(--c-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+
+    .bw-service-select { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .bw-service-opt {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 14px; border-radius: 10px; border: 1.5px solid var(--c-border);
+      cursor: pointer; transition: all .15s; font-size: 14px;
+    }
+    .bw-service-opt.selected { border-color: var(--c-accent); background: var(--c-accent-lt); }
+    .bw-service-opt:hover:not(.selected) { border-color: #c4b5fd; }
+    .bw-opt-left { display: flex; align-items: center; gap: 10px; }
+    .bw-opt-icon { font-size: 18px; }
+    .bw-opt-info strong { font-size: 14px; font-weight: 600; color: var(--c-text); display: block; }
+    .bw-opt-info span { font-size: 12px; color: var(--c-muted); }
+    .bw-opt-price { font-size: 14px; font-weight: 700; color: var(--c-accent); }
+
+    .mini-cal { margin-bottom: 20px; }
+    .mini-cal-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+    }
+    .mini-cal-header span { font-size: 14px; font-weight: 700; }
+    .mini-cal-nav { display: flex; gap: 4px; }
+    .mini-cal-nav button {
+      width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--c-border);
+      background: #fff; cursor: pointer; font-size: 12px; transition: all .15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mini-cal-nav button:hover { background: var(--c-accent); color: #fff; border-color: var(--c-accent); }
+    .mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .mini-cal-dh { text-align: center; font-size: 10px; font-weight: 600; color: var(--c-muted); padding: 4px 0; }
+    .mc-day {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 500; border-radius: 6px; cursor: pointer;
+      transition: all .15s; color: var(--c-text); position: relative;
+    }
+    .mc-day:hover:not(.muted):not(.today) { background: var(--c-accent-lt); }
+    .mc-day.today { background: var(--c-accent); color: #fff; font-weight: 700; }
+    .mc-day.selected { background: var(--c-accent); color: #fff; font-weight: 700; }
+    .mc-day.muted { color: #e5e7eb; cursor: default; }
+    .mc-day.dot::after {
+      content: ''; position: absolute; bottom: 2px;
+      width: 3px; height: 3px; border-radius: 50%; background: var(--c-green);
+    }
+    .mc-day.today.dot::after, .mc-day.selected.dot::after { background: rgba(255,255,255,.7); }
+
+    .mini-slots { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+    .mini-slot {
+      padding: 6px 11px; border-radius: 7px; border: 1.5px solid var(--c-border);
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all .15s;
+    }
+    .mini-slot:hover { border-color: var(--c-accent); color: var(--c-accent); }
+    .mini-slot.sel { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
+
+    .bw-divider { height: 1px; background: var(--c-border); margin: 18px 0; }
+
+    .bw-confirm-summary {
+      background: var(--c-surface); border-radius: 10px; padding: 14px;
+      margin-bottom: 16px;
+    }
+    .bw-confirm-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; margin-bottom: 6px;
+    }
+    .bw-confirm-row:last-child { margin-bottom: 0; }
+    .bw-confirm-row svg { width: 14px; height: 14px; color: var(--c-muted); flex-shrink: 0; }
+    .bw-confirm-row span { color: var(--c-text); font-weight: 500; }
+    .bw-confirm-row .pill {
+      background: #d1fae5; color: #065f46; font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 99px;
+    }
+
+    @media (max-width: 900px) {
+      .booking-inner { grid-template-columns: 1fr; }
+      .booking-info { text-align: center; }
+      .booking-features { align-items: center; }
+      .booking-feature { max-width: 340px; text-align: left; }
+    }
+
+    /* ─── BENEFITS ───────────────────────────────────────── */
+    .benefits-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .benefit-card {
+      background: #fff; border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 30px 24px;
+      transition: all .2s;
+    }
+    .benefit-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    .benefit-icon-wrap {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: var(--c-accent-lt); color: var(--c-accent);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+    }
+    .benefit-icon-wrap svg { width: 24px; height: 24px; }
+    .benefit-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .benefit-desc { font-size: 14px; color: var(--c-muted); line-height: 1.7; }
+
+    @media (max-width: 768px) {
+      .benefits-grid { grid-template-columns: 1fr; }
+    }
+    @media (min-width: 480px) and (max-width: 768px) {
+      .benefits-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ─── TESTIMONIALS ───────────────────────────────────── */
+    .testi-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .testi-card {
+      background: #fff; border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 24px;
+      display: flex; flex-direction: column;
+    }
+    .testi-stars { color: #f59e0b; font-size: 14px; letter-spacing: 2px; margin-bottom: 14px; }
+    .testi-quote { font-size: 15px; color: var(--c-text); line-height: 1.7; margin-bottom: 20px; flex: 1; }
+    .testi-author { display: flex; align-items: center; gap: 10px; }
+    .testi-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; flex-shrink: 0;
+    }
+    .testi-author-info strong { font-size: 14px; font-weight: 700; display: block; }
+    .testi-author-info span { font-size: 12px; color: var(--c-muted); }
+
+    @media (max-width: 768px) {
+      .testi-grid { grid-template-columns: 1fr; }
+    }
+    @media (min-width: 540px) and (max-width: 768px) {
+      .testi-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ─── FINAL CTA ──────────────────────────────────────── */
+    .cta-section {
+      background: var(--c-accent); padding: 80px 0;
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .cta-section::before {
+      content: ''; position: absolute;
+      width: 400px; height: 400px; border-radius: 50%;
+      background: rgba(255,255,255,.06); top: -150px; left: -80px;
+    }
+    .cta-section::after {
+      content: ''; position: absolute;
+      width: 300px; height: 300px; border-radius: 50%;
+      background: rgba(255,255,255,.04); bottom: -100px; right: -60px;
+    }
+    .cta-inner { position: relative; z-index: 1; }
+    .cta-badge {
+      display: inline-block; background: rgba(255,255,255,.15);
+      color: #fff; font-size: 12px; font-weight: 600; letter-spacing: .06em;
+      text-transform: uppercase; padding: 5px 14px; border-radius: 99px;
+      margin-bottom: 20px;
+    }
+    .cta-section h2 {
+      font-size: clamp(28px, 4.5vw, 44px); font-weight: 900;
+      letter-spacing: -.02em; color: #fff; margin-bottom: 16px;
+    }
+    .cta-section p { font-size: 17px; color: rgba(255,255,255,.75); margin-bottom: 40px; }
+    .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn-white {
+      background: #fff; color: var(--c-accent);
+      box-shadow: 0 4px 20px rgba(0,0,0,.15);
+    }
+    .btn-white:hover { background: #f5f3ff; transform: translateY(-2px); }
+    .btn-outline-white {
+      background: transparent; color: #fff;
+      border: 1.5px solid rgba(255,255,255,.4);
+    }
+    .btn-outline-white:hover { background: rgba(255,255,255,.1); border-color: #fff; }
+    .cta-sub { margin-top: 24px; font-size: 13px; color: rgba(255,255,255,.5); }
+    .cta-sub span { margin: 0 8px; }
+
+    /* ─── FOOTER ─────────────────────────────────────────── */
+    footer {
+      background: #0f0f10; padding: 40px 0;
+    }
+    .footer-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo {
+      font-size: 17px; font-weight: 800; color: #fff; text-decoration: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .footer-logo-icon {
+      width: 28px; height: 28px; background: var(--c-accent); border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .footer-logo-icon svg { width: 14px; height: 14px; color: #fff; }
+    footer p { font-size: 13px; color: #6b7280; }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: #6b7280; text-decoration: none; transition: color .15s; }
+    .footer-links a:hover { color: #fff; }
+
+    /* ─── STICKY BOOK BUTTON (mobile) ───────────────────── */
+    .sticky-book {
+      display: none;
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 200; width: calc(100% - 40px); max-width: 400px;
+    }
+    .sticky-book a {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      background: var(--c-accent); color: #fff;
+      font-size: 16px; font-weight: 700; padding: 16px;
+      border-radius: 14px; text-decoration: none;
+      box-shadow: 0 8px 30px rgba(79,70,229,.45);
+      transition: all .18s;
+    }
+    .sticky-book a:active { transform: scale(.98); }
+    @media (max-width: 640px) {
+      .sticky-book { display: block; }
+    }
+
+    /* ─── MISC ───────────────────────────────────────────── */
+    .divider { height: 1px; background: var(--c-border); }
+
+    /* Input styles in booking widget */
+    .bw-input {
+      width: 100%; padding: 11px 14px; border: 1.5px solid var(--c-border);
+      border-radius: 10px; font-family: inherit; font-size: 14px;
+      color: var(--c-text); background: #fff; outline: none;
+      transition: border-color .15s; margin-bottom: 10px;
+    }
+    .bw-input:focus { border-color: var(--c-accent); }
+    .bw-input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* Checkmark icon inline */
+    .check { display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; background: var(--c-green); border-radius: 50%; flex-shrink: 0; }
+    .check svg { width: 10px; height: 10px; color: #fff; }
+  </style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  NAV                                     ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<nav class="nav">
+  <div class="container">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="4" width="18" height="18" rx="3"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        BookEase
+      </a>
+
+      <div class="nav-links">
+        <a href="#how-it-works">How it works</a>
+        <a href="#services">Services</a>
+        <a href="#booking">Book</a>
+        <a href="#testimonials">Reviews</a>
+      </div>
+
+      <div class="nav-actions">
+        <a href="#" class="btn btn-ghost" style="font-size:14px;padding:9px 18px;">Sign in</a>
+        <a href="#booking" class="btn btn-primary" style="font-size:14px;padding:9px 18px;">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="4" width="18" height="18" rx="3"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          Book Now
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  HERO                                    ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner">
+
+      <!-- Left: copy -->
+      <div class="hero-copy">
+        <div class="hero-eyebrow">
+          <div class="dot"></div>
+          Now accepting appointments
+        </div>
+
+        <h1>Book Your<br><span class="accent">Appointment</span><br>in Seconds</h1>
+
+        <p class="hero-sub">
+          Simple, fast, and hassle-free scheduling — pick a service,
+          choose your time, and confirm instantly. No phone calls, no waiting.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#booking" class="btn btn-primary btn-lg">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <rect x="3" y="4" width="18" height="18" rx="3"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Book Now — It's Free
+          </a>
+          <a href="#how-it-works" class="btn btn-ghost btn-lg">See how it works</a>
+        </div>
+
+        <div class="hero-trust">
+          <div class="hero-avatars">
+            <div class="avatar-placeholder">JD</div>
+            <div class="avatar-placeholder" style="background:#fce7f3;color:#be185d">AM</div>
+            <div class="avatar-placeholder" style="background:#d1fae5;color:#065f46">RK</div>
+            <div class="avatar-placeholder" style="background:#fef3c7;color:#92400e">TP</div>
+          </div>
+          <div class="hero-trust-text">
+            <div class="stars">★★★★★</div>
+            Trusted by <strong>2,400+</strong> clients
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: calendar card -->
+      <div class="hero-visual">
+        <!-- Floating badges -->
+        <div class="float-badge confirmed">
+          <div class="float-badge-icon green">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div class="float-badge-info">
+            <strong>Booking Confirmed!</strong>
+            <span>Apr 12 · 10:00 AM</span>
+          </div>
+        </div>
+
+        <div class="float-badge remind">
+          <div class="float-badge-icon purple">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </div>
+          <div class="float-badge-info">
+            <strong>Reminder sent</strong>
+            <span>1 hour before</span>
+          </div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hc-header">
+            <div class="hc-title">April 2025</div>
+            <div class="hc-nav">
+              <button>&#8249;</button>
+              <button>&#8250;</button>
+            </div>
+          </div>
+
+          <div class="cal-days-header">
+            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span>
+            <span>Th</span><span>Fr</span><span>Sa</span>
+          </div>
+          <div class="cal-grid">
+            <!-- Row 1 -->
+            <div class="cal-day muted">30</div>
+            <div class="cal-day muted">31</div>
+            <div class="cal-day">1</div>
+            <div class="cal-day has-slot">2</div>
+            <div class="cal-day has-slot">3</div>
+            <div class="cal-day">4</div>
+            <div class="cal-day">5</div>
+            <!-- Row 2 -->
+            <div class="cal-day">6</div>
+            <div class="cal-day has-slot">7</div>
+            <div class="cal-day has-slot">8</div>
+            <div class="cal-day today">9</div>
+            <div class="cal-day has-slot">10</div>
+            <div class="cal-day has-slot">11</div>
+            <div class="cal-day">12</div>
+            <!-- Row 3 -->
+            <div class="cal-day">13</div>
+            <div class="cal-day selected">14</div>
+            <div class="cal-day has-slot">15</div>
+            <div class="cal-day has-slot">16</div>
+            <div class="cal-day">17</div>
+            <div class="cal-day has-slot">18</div>
+            <div class="cal-day">19</div>
+            <!-- Row 4 -->
+            <div class="cal-day">20</div>
+            <div class="cal-day has-slot">21</div>
+            <div class="cal-day has-slot">22</div>
+            <div class="cal-day">23</div>
+            <div class="cal-day has-slot">24</div>
+            <div class="cal-day">25</div>
+            <div class="cal-day">26</div>
+            <!-- Row 5 -->
+            <div class="cal-day">27</div>
+            <div class="cal-day">28</div>
+            <div class="cal-day has-slot">29</div>
+            <div class="cal-day has-slot">30</div>
+            <div class="cal-day muted">1</div>
+            <div class="cal-day muted">2</div>
+            <div class="cal-day muted">3</div>
+          </div>
+
+          <div class="time-slots">
+            <div class="time-slot">9:00 AM</div>
+            <div class="time-slot active">10:00 AM</div>
+            <div class="time-slot">11:00 AM</div>
+            <div class="time-slot full">12:00 PM</div>
+            <div class="time-slot">2:00 PM</div>
+            <div class="time-slot">3:00 PM</div>
+          </div>
+
+          <div class="hc-footer">
+            <a href="#booking" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px;">
+              Confirm — Apr 14, 10:00 AM
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  HOW IT WORKS                            ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="section section--alt" id="how-it-works">
+  <div class="container">
+    <div class="section-header section-header--center">
+      <div class="section-label">Simple process</div>
+      <h2 class="section-title">Three steps to your appointment</h2>
+      <p class="section-sub">No account required. No back-and-forth. Just pick and confirm.</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-icon">🗂️</div>
+        <div class="step-title">Choose a Service</div>
+        <p class="step-desc">Browse our list of services and select the one that fits your needs. Prices and durations are shown upfront.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-icon">📅</div>
+        <div class="step-title">Pick a Time</div>
+        <p class="step-desc">See real-time availability on the calendar. Choose any open slot that works for your schedule.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-icon">✅</div>
+        <div class="step-title">Confirm Instantly</div>
+        <p class="step-desc">Submit your details and receive an instant confirmation with a reminder before your appointment.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  SERVICES                                ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="section" id="services">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">What we offer</div>
+      <h2 class="section-title">Our Services</h2>
+      <p class="section-sub">Professional services tailored to your needs — transparent pricing, no hidden fees.</p>
+    </div>
+
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-emoji">✂️</div>
+        <div class="service-name">Haircut & Styling</div>
+        <p class="service-desc">Full cut, wash, and blow-dry with a professional stylist. Includes consultation.</p>
+        <div class="service-meta">
+          <div class="service-duration">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            45 min
+          </div>
+          <div class="service-price">$45</div>
+        </div>
+        <a href="#booking" class="book-link">
+          Book this service →
+        </a>
+      </div>
+
+      <div class="service-card">
+        <div class="service-emoji">💆</div>
+        <div class="service-name">Relaxation Massage</div>
+        <p class="service-desc">Swedish full-body massage to relieve tension and improve circulation.</p>
+        <div class="service-meta">
+          <div class="service-duration">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            60 min
+          </div>
+          <div class="service-price">$80</div>
+        </div>
+        <a href="#booking" class="book-link">Book this service →</a>
+      </div>
+
+      <div class="service-card" style="border-color: var(--c-accent); position:relative; overflow:hidden;">
+        <div style="position:absolute;top:12px;right:12px;background:var(--c-accent);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;letter-spacing:.04em;text-transform:uppercase;">Popular</div>
+        <div class="service-emoji">🧖</div>
+        <div class="service-name">Deep Tissue Treatment</div>
+        <p class="service-desc">Targets deep muscle layers to address chronic tension and sports-related stress.</p>
+        <div class="service-meta">
+          <div class="service-duration">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            90 min
+          </div>
+          <div class="service-price">$110</div>
+        </div>
+        <a href="#booking" class="book-link">Book this service →</a>
+      </div>
+
+      <div class="service-card">
+        <div class="service-emoji">💅</div>
+        <div class="service-name">Manicure & Pedicure</div>
+        <p class="service-desc">Full nail care with cuticle work, shaping, polish, and finishing treatment.</p>
+        <div class="service-meta">
+          <div class="service-duration">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            75 min
+          </div>
+          <div class="service-price">$65</div>
+        </div>
+        <a href="#booking" class="book-link">Book this service →</a>
+      </div>
+
+      <div class="service-card">
+        <div class="service-emoji">🧴</div>
+        <div class="service-name">Facial Treatment</div>
+        <p class="service-desc">Cleansing, exfoliation, mask, and moisturizing facial tailored to your skin type.</p>
+        <div class="service-meta">
+          <div class="service-duration">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            50 min
+          </div>
+          <div class="service-price">$70</div>
+        </div>
+        <a href="#booking" class="book-link">Book this service →</a>
+      </div>
+
+      <div class="service-card">
+        <div class="service-emoji">🧘</div>
+        <div class="service-name">Consultation</div>
+        <p class="service-desc">Free 20-minute intro call to discuss your goals and recommend the best services.</p>
+        <div class="service-meta">
+          <div class="service-duration">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            20 min
+          </div>
+          <div class="service-price" style="color:var(--c-green)">Free</div>
+        </div>
+        <a href="#booking" class="book-link">Book this service →</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  BOOKING SECTION                         ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="booking-section" id="booking">
+  <div class="container">
+    <div class="booking-inner">
+
+      <!-- Info -->
+      <div class="booking-info">
+        <div class="section-label">Online Booking</div>
+        <h2 class="section-title" style="color:#fff;">Schedule your<br>appointment now</h2>
+        <p class="section-sub" style="color:#a5b4fc;max-width:400px;">
+          Real-time availability. Instant confirmation. No phone tag required.
+        </p>
+
+        <div class="booking-features">
+          <div class="booking-feature">
+            <div class="bf-icon">⚡</div>
+            <div class="bf-text">
+              <strong>Books in under 60 seconds</strong>
+              <span>Fast, mobile-optimized booking flow with no required account.</span>
+            </div>
+          </div>
+          <div class="booking-feature">
+            <div class="bf-icon">🔔</div>
+            <div class="bf-text">
+              <strong>Automatic reminders</strong>
+              <span>SMS &amp; email reminders 24 hours and 1 hour before your appointment.</span>
+            </div>
+          </div>
+          <div class="booking-feature">
+            <div class="bf-icon">🔄</div>
+            <div class="bf-text">
+              <strong>Easy rescheduling</strong>
+              <span>Change or cancel with one click up to 24 hours before your visit.</span>
+            </div>
+          </div>
+          <div class="booking-feature">
+            <div class="bf-icon">🔒</div>
+            <div class="bf-text">
+              <strong>Secure &amp; private</strong>
+              <span>Your data is encrypted. We never sell or share your information.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widget -->
+      <div class="booking-widget">
+        <div class="bw-header">
+          <div class="bw-header-top">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <rect x="3" y="4" width="18" height="18" rx="3"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <div class="bw-header-title">Book an Appointment</div>
+          </div>
+          <div class="bw-header-sub">Select service &rarr; Pick time &rarr; Confirm</div>
+        </div>
+
+        <div class="bw-body">
+          <!-- Step indicator -->
+          <div class="bw-step-indicator">
+            <div class="bw-step done"></div>
+            <div class="bw-step done"></div>
+            <div class="bw-step active"></div>
+          </div>
+
+          <!-- Step 1: Service -->
+          <div class="bw-label">1 — Choose Service</div>
+          <div class="bw-service-select">
+            <div class="bw-service-opt">
+              <div class="bw-opt-left">
+                <div class="bw-opt-icon">✂️</div>
+                <div class="bw-opt-info">
+                  <strong>Haircut &amp; Styling</strong>
+                  <span>45 min</span>
+                </div>
+              </div>
+              <div class="bw-opt-price">$45</div>
+            </div>
+            <div class="bw-service-opt selected">
+              <div class="bw-opt-left">
+                <div class="bw-opt-icon">🧖</div>
+                <div class="bw-opt-info">
+                  <strong>Deep Tissue Treatment</strong>
+                  <span>90 min</span>
+                </div>
+              </div>
+              <div class="bw-opt-price">$110</div>
+            </div>
+            <div class="bw-service-opt">
+              <div class="bw-opt-left">
+                <div class="bw-opt-icon">💆</div>
+                <div class="bw-opt-info">
+                  <strong>Relaxation Massage</strong>
+                  <span>60 min</span>
+                </div>
+              </div>
+              <div class="bw-opt-price">$80</div>
+            </div>
+          </div>
+
+          <div class="bw-divider"></div>
+
+          <!-- Step 2: Date -->
+          <div class="bw-label">2 — Pick a Date</div>
+          <div class="mini-cal">
+            <div class="mini-cal-header">
+              <span>April 2025</span>
+              <div class="mini-cal-nav">
+                <button>&#8249;</button>
+                <button>&#8250;</button>
+              </div>
+            </div>
+            <div class="mini-cal-grid">
+              <div class="mini-cal-dh">Su</div><div class="mini-cal-dh">Mo</div>
+              <div class="mini-cal-dh">Tu</div><div class="mini-cal-dh">We</div>
+              <div class="mini-cal-dh">Th</div><div class="mini-cal-dh">Fr</div>
+              <div class="mini-cal-dh">Sa</div>
+
+              <div class="mc-day muted">30</div><div class="mc-day muted">31</div>
+              <div class="mc-day">1</div><div class="mc-day dot">2</div>
+              <div class="mc-day dot">3</div><div class="mc-day">4</div><div class="mc-day">5</div>
+
+              <div class="mc-day">6</div><div class="mc-day dot">7</div>
+              <div class="mc-day dot">8</div><div class="mc-day today dot">9</div>
+              <div class="mc-day dot">10</div><div class="mc-day dot">11</div><div class="mc-day">12</div>
+
+              <div class="mc-day">13</div><div class="mc-day selected dot">14</div>
+              <div class="mc-day dot">15</div><div class="mc-day dot">16</div>
+              <div class="mc-day">17</div><div class="mc-day dot">18</div><div class="mc-day">19</div>
+
+              <div class="mc-day">20</div><div class="mc-day dot">21</div>
+              <div class="mc-day dot">22</div><div class="mc-day">23</div>
+              <div class="mc-day dot">24</div><div class="mc-day">25</div><div class="mc-day">26</div>
+
+              <div class="mc-day">27</div><div class="mc-day">28</div>
+              <div class="mc-day dot">29</div><div class="mc-day dot">30</div>
+              <div class="mc-day muted">1</div><div class="mc-day muted">2</div><div class="mc-day muted">3</div>
+            </div>
+          </div>
+
+          <!-- Step 2b: Time -->
+          <div class="bw-label">Time Slots — Mon Apr 14</div>
+          <div class="mini-slots">
+            <div class="mini-slot">9:00</div>
+            <div class="mini-slot sel">10:00</div>
+            <div class="mini-slot">11:00</div>
+            <div class="mini-slot" style="color:#d1d5db;border-color:var(--c-border);cursor:not-allowed;">12:00</div>
+            <div class="mini-slot">14:00</div>
+            <div class="mini-slot">15:00</div>
+            <div class="mini-slot">16:00</div>
+          </div>
+
+          <div class="bw-divider"></div>
+
+          <!-- Step 3: Your Info -->
+          <div class="bw-label">3 — Your Details</div>
+          <div class="bw-input-row">
+            <input class="bw-input" type="text" placeholder="First name" value="Maria" />
+            <input class="bw-input" type="text" placeholder="Last name" value="Torres" />
+          </div>
+          <input class="bw-input" type="email" placeholder="Email address" value="maria@example.com" />
+          <input class="bw-input" type="tel" placeholder="Phone (optional)" />
+
+          <!-- Confirmation summary -->
+          <div class="bw-confirm-summary">
+            <div class="bw-confirm-row">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="3"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span>Mon, April 14 · 10:00 AM</span>
+            </div>
+            <div class="bw-confirm-row">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span>Deep Tissue Treatment · 90 min</span>
+            </div>
+            <div class="bw-confirm-row">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/>
+                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+              </svg>
+              <span style="font-weight:700;">$110.00</span>
+              <span class="pill">Confirmed on submit</span>
+            </div>
+          </div>
+
+          <a href="#" class="btn btn-primary" style="width:100%;justify-content:center;font-size:15px;padding:14px;">
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Confirm Booking
+          </a>
+
+          <p style="text-align:center;font-size:11px;color:var(--c-muted);margin-top:12px;">
+            Free cancellation up to 24h before · Instant email confirmation
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  BENEFITS                                ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="section section--alt">
+  <div class="container">
+    <div class="section-header section-header--center">
+      <div class="section-label">Why BookEase</div>
+      <h2 class="section-title">Built to make booking effortless</h2>
+      <p class="section-sub">Everything you need. Nothing you don't.</p>
+    </div>
+
+    <div class="benefits-grid">
+
+      <div class="benefit-card">
+        <div class="benefit-icon-wrap">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div class="benefit-title">No Waiting on Hold</div>
+        <p class="benefit-desc">Skip the phone queue entirely. See live availability and book in under a minute, any time of day or night.</p>
+      </div>
+
+      <div class="benefit-card">
+        <div class="benefit-icon-wrap">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="3"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        <div class="benefit-title">Easy Scheduling</div>
+        <p class="benefit-desc">Visual calendar, real-time slots, and a clean three-step flow. Booking an appointment has never been simpler.</p>
+      </div>
+
+      <div class="benefit-card">
+        <div class="benefit-icon-wrap">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="benefit-title">Instant Confirmation</div>
+        <p class="benefit-desc">Receive a confirmation email the moment you book, plus automated reminders so you never miss an appointment.</p>
+      </div>
+
+      <div class="benefit-card">
+        <div class="benefit-icon-wrap">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div class="benefit-title">Private &amp; Secure</div>
+        <p class="benefit-desc">Your personal data is encrypted and never sold. We comply with GDPR and industry privacy standards.</p>
+      </div>
+
+      <div class="benefit-card">
+        <div class="benefit-icon-wrap">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div class="benefit-title">SMS &amp; Email Reminders</div>
+        <p class="benefit-desc">Automatic reminders 24 hours and 1 hour before your appointment — no more forgotten bookings.</p>
+      </div>
+
+      <div class="benefit-card">
+        <div class="benefit-icon-wrap">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </div>
+        <div class="benefit-title">Free Rescheduling</div>
+        <p class="benefit-desc">Plans change — that's okay. Reschedule or cancel for free up to 24 hours before your appointment, no questions asked.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  TESTIMONIALS                            ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="section" id="testimonials">
+  <div class="container">
+    <div class="section-header section-header--center">
+      <div class="section-label">Real reviews</div>
+      <h2 class="section-title">Clients love it</h2>
+      <p class="section-sub">Join 2,400+ happy clients who book their appointments online.</p>
+    </div>
+
+    <div class="testi-grid">
+
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-quote">"Finally a booking system that doesn't make me want to just call instead. Took me 45 seconds from start to confirmation. Absolutely seamless."</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:#ede9fe;color:#6d28d9;">JP</div>
+          <div class="testi-author-info">
+            <strong>Jessica Park</strong>
+            <span>Regular client · Massage</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-quote">"I love that I can book at midnight when I remember I need an appointment. The reminders are a lifesaver — I've never shown up on the wrong day."</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:#d1fae5;color:#065f46;">DM</div>
+          <div class="testi-author-info">
+            <strong>David Morales</strong>
+            <span>Monthly client · Haircut</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-quote">"The calendar is so clean and easy to use. Seeing all available slots at a glance makes it easy to find something that actually fits my schedule."</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:#fce7f3;color:#be185d;">SR</div>
+          <div class="testi-author-info">
+            <strong>Sofia Reyes</strong>
+            <span>New client · Facial</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-quote">"As someone who hates making phone calls, this is exactly what I needed. Booking, rescheduling, reminders — all automated. 10/10 would recommend."</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:#fef3c7;color:#92400e;">MK</div>
+          <div class="testi-author-info">
+            <strong>Michael Kim</strong>
+            <span>Regular client · Deep Tissue</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="testi-card">
+        <div class="testi-stars">★★★★☆</div>
+        <p class="testi-quote">"Super fast booking and the confirmation email arrived within seconds. I also appreciated how easy it was to reschedule when something came up."</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:#e0f2fe;color:#0369a1;">AL</div>
+          <div class="testi-author-info">
+            <strong>Anna Lim</strong>
+            <span>Occasional client · Manicure</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-quote">"Best booking experience I've had anywhere. No friction, no confusion. I booked my first appointment on mobile in under a minute — while commuting!"</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:#fce7f3;color:#be185d;">TC</div>
+          <div class="testi-author-info">
+            <strong>Tom Chen</strong>
+            <span>Regular client · Consultation</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  FINAL CTA                               ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-inner">
+      <div class="cta-badge">Ready when you are</div>
+      <h2>Schedule your appointment now</h2>
+      <p>Takes less than 60 seconds. No account required.</p>
+      <div class="cta-actions">
+        <a href="#booking" class="btn btn-white btn-xl">
+          <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="4" width="18" height="18" rx="3"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          Book My Appointment
+        </a>
+        <a href="#services" class="btn btn-outline-white btn-xl">View Services</a>
+      </div>
+      <p class="cta-sub">
+        Free cancellation
+        <span>·</span>
+        Instant confirmation
+        <span>·</span>
+        No credit card required
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  FOOTER                                  ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <a href="#" class="footer-logo">
+        <div class="footer-logo-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="4" width="18" height="18" rx="3"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        BookEase
+      </a>
+      <p>&copy; 2025 BookEase. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║  STICKY BOOK BUTTON (mobile only)        ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<div class="sticky-book">
+  <a href="#booking">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <rect x="3" y="4" width="18" height="18" rx="3"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+    Book Now
+  </a>
+</div>
+
+<script>
+  // Calendar day click interaction
+  document.querySelectorAll('.cal-day:not(.muted), .mc-day:not(.muted)').forEach(day => {
+    day.addEventListener('click', function() {
+      const parent = this.closest('.cal-grid, .mini-cal-grid');
+      if (!parent) return;
+      parent.querySelectorAll('.selected').forEach(d => d.classList.remove('selected'));
+      if (!this.classList.contains('today')) this.classList.add('selected');
+    });
+  });
+
+  // Time slot click interaction
+  document.querySelectorAll('.time-slot:not(.full), .mini-slot').forEach(slot => {
+    slot.addEventListener('click', function() {
+      const parent = this.closest('.time-slots, .mini-slots');
+      if (!parent) return;
+      parent.querySelectorAll('.active, .sel').forEach(s => s.classList.remove('active', 'sel'));
+      this.classList.add(this.classList.contains('time-slot') ? 'active' : 'sel');
+    });
+  });
+
+  // Service option click
+  document.querySelectorAll('.bw-service-opt').forEach(opt => {
+    opt.addEventListener('click', function() {
+      this.closest('.bw-service-select').querySelectorAll('.selected').forEach(o => o.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+
+  // Hide sticky book button when booking section is visible
+  const bookingSection = document.getElementById('booking');
+  const stickyBtn = document.querySelector('.sticky-book');
+  if (bookingSection && stickyBtn) {
+    const obs = new IntersectionObserver(entries => {
+      stickyBtn.style.opacity = entries[0].isIntersecting ? '0' : '1';
+      stickyBtn.style.pointerEvents = entries[0].isIntersecting ? 'none' : 'auto';
+      stickyBtn.style.transform = entries[0].isIntersecting
+        ? 'translateX(-50%) translateY(20px)'
+        : 'translateX(-50%) translateY(0)';
+      stickyBtn.style.transition = 'all .3s';
+    }, { threshold: 0.2 });
+    obs.observe(bookingSection);
+  }
+</script>
+
+</body>
+</html>

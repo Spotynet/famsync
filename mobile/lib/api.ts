@@ -77,6 +77,20 @@ export const api = {
     return apiFetch(path, { method: 'GET' });
   },
 
+  async patch(path: string, body: unknown): Promise<Response> {
+    return apiFetch(path, {
+      method: 'PATCH',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  },
+
+  async delete(path: string, body?: unknown): Promise<Response> {
+    return apiFetch(path, {
+      method: 'DELETE',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  },
+
   async postForm(path: string, body: Record<string, string>): Promise<Response> {
     const form = new URLSearchParams(body).toString();
     const { access } = await getStoredTokens();
@@ -152,4 +166,51 @@ export async function fetchMe(): Promise<{
   const res = await api.get('/api/auth/me/');
   if (!res.ok) throw new Error('Not authenticated');
   return res.json();
+}
+
+/** Must match backend integrations.views MOBILE_SUCCESS_REDIRECT */
+export const GOOGLE_CALENDAR_OAUTH_RETURN_URL = 'famsync://calendar-connected';
+
+export type GoogleCalendarStatus = {
+  connected: boolean;
+  calendar_id: string | null;
+  last_sync_at: string | null;
+};
+
+export async function getGoogleCalendarStatus(): Promise<GoogleCalendarStatus> {
+  const res = await api.get('/api/integrations/google-calendar/');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || err.detail || 'No se pudo obtener el estado de Calendar');
+  }
+  return res.json();
+}
+
+export async function connectGoogleCalendar(): Promise<string> {
+  const res = await api.post('/api/integrations/google-calendar/connect/', {});
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      err.error || 'Calendar no está configurado en el servidor o no se pudo iniciar la conexión'
+    );
+  }
+  const data = (await res.json()) as { auth_url: string };
+  if (!data.auth_url) throw new Error('Respuesta inválida del servidor');
+  return data.auth_url;
+}
+
+export async function disconnectGoogleCalendar(): Promise<void> {
+  const res = await api.delete('/api/integrations/google-calendar/');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'No se pudo desconectar');
+  }
+}
+
+export async function syncGoogleCalendar(): Promise<void> {
+  const res = await api.post('/api/integrations/google-calendar/sync/', {});
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'No se pudo sincronizar');
+  }
 }

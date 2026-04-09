@@ -3,6 +3,7 @@ Auth services: Google token verification, OTP generation, email sending.
 """
 from typing import Optional
 import secrets
+import threading
 from datetime import timedelta
 from django.conf import settings
 from django.core.mail import send_mail
@@ -74,28 +75,36 @@ def generate_otp_code() -> str:
     return ''.join(secrets.choice('0123456789') for _ in range(6))
 
 
+def _send_otp_email(email: str, code: str) -> None:
+    """Send OTP email in a background thread so the API responds immediately."""
+    subject = 'Tu código de verificación - Famsync'
+    message = (
+        f'Tu código de verificación es: {code}\n\n'
+        f'Válido por {settings.OTP_EXPIRY_MINUTES} minutos.\n\n'
+        f'Si no solicitaste este código, ignora este mensaje.'
+    )
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[email],
+        fail_silently=True,
+    )
+
+
 def create_and_send_otp(email: str) -> bool:
     """
-    Create verification code, send email, return True on success.
+    Create verification code, fire-and-forget email, return True immediately.
     """
-    # Invalidate any existing unused codes for this email
     VerificationCode.objects.filter(email=email, used=False).update(used=True)
 
     code = generate_otp_code()
     expires_at = timezone.now() + timedelta(minutes=settings.OTP_EXPIRY_MINUTES)
     VerificationCode.objects.create(email=email, code=code, expires_at=expires_at)
 
-    subject = 'Tu código de verificación - Famsync'
-    message = f'Tu código de verificación es: {code}\n\nVálido por {settings.OTP_EXPIRY_MINUTES} minutos.'
-    from_email = settings.DEFAULT_FROM_EMAIL
+    thread = threading.Thread(target=_send_otp_email, args=(email, code), daemon=True)
+    thread.start()
 
-    send_mail(
-        subject=subject,
-        message=message,
-        from_email=from_email,
-        recipient_list=[email],
-        fail_silently=False,
-    )
     return True
 
 

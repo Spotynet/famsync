@@ -1,14 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Dimensions,
+  Animated,
   FlatList,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
+  useWindowDimensions,
   View,
   ViewToken,
 } from 'react-native';
@@ -19,10 +21,7 @@ import { setItem, SETUP_DONE_KEY } from '../lib/storage';
 
 export const ONBOARDING_DONE_KEY = 'famsync_onboarding_done';
 
-const { width: W, height: H } = Dimensions.get('window');
-const IL_HEIGHT = H * 0.60;
 const PRIMARY = '#34C759';
-const LOGO_TEAL = '#1D7063';
 const PALE_TEAL = '#9FD6CD';
 
 // ─── Theme helpers ────────────────────────────────────────────────────────────
@@ -69,31 +68,17 @@ const ACCENTS: SlideAccent[] = [
 
 // ─── Slide 1 — Welcome logo ─────────────────────────────────────────────────
 function WelcomeIllustration({ t }: { t: Theme }) {
-  const logoSize = W * 0.58;
-  const logoTop = IL_HEIGHT / 2 - logoSize / 2;
   return (
     <View style={ill.welcomeOuter}>
-      <View
-        style={[
-          ill.logoBox,
-          {
-            backgroundColor: LOGO_TEAL,
-            width: logoSize,
-            height: logoSize,
-            position: 'absolute',
-            top: logoTop,
-            left: W / 2 - logoSize / 2,
-          },
-        ]}
-      >
-        <Text style={ill.famsyncBig}>FAMSYNC</Text>
-      </View>
-      <Text
-        style={[
-          ill.welcomeDesc,
-          { color: t.text, position: 'absolute', top: logoTop + logoSize + 16, left: 24, right: 24 },
-        ]}
-      >
+      <Image
+        source={require('../assets/images/famsync_logo.png')}
+        style={ill.welcomeLogo}
+        resizeMode="contain"
+      />
+      {!t.isDark && (
+        <Text style={ill.welcomeName}>FamSync</Text>
+      )}
+      <Text style={[ill.welcomeDesc, { color: t.muted }]}>
         Tu familia en sintonía
       </Text>
     </View>
@@ -173,7 +158,11 @@ function OneMapIllustration({ t }: { t: Theme }) {
         {/* FamSync center box */}
         <View style={[ill.oneMapCenter, { backgroundColor: PALE_TEAL, position: 'absolute', left: BL, top: BT }]}>
           <Ionicons name="people" size={28} color="rgba(0,0,0,0.18)" />
-          <Text style={ill.oneMapFamsync}>FamSync</Text>
+          <Image
+            source={require('../assets/images/famsync_name.png')}
+            style={ill.oneMapFamsyncImg}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Person nodes with emoji/icon */}
@@ -265,36 +254,37 @@ function EliminaSilosIllustration({ t }: { t: Theme }) {
 }
 
 // ─── Slide 4 — Del caos a la sintonía (Antes/Después) ─────────────────────────
-function DelCaosIllustration() {
+function DelCaosIllustration({ t }: { t: Theme }) {
+  const textColor = t.isDark ? '#D1D5DB' : '#374151';
   return (
     <View style={ill.caosOuter}>
       <View style={ill.caosCol}>
-        <View style={[ill.caosCircle, { backgroundColor: '#E9D5FF' }]}>
+        <View style={[ill.caosCircle, { backgroundColor: t.isDark ? '#2D1B4E' : '#E9D5FF' }]}>
           <Text style={ill.caosEmoji}>😔</Text>
         </View>
-        <View style={ill.caosBubble}>
-          <Text style={ill.caosBubbleText}>Se me olvidó...</Text>
+        <View style={[ill.caosBubble, { borderColor: t.border }]}>
+          <Text style={[ill.caosBubbleText, { color: textColor }]}>Se me olvidó...</Text>
         </View>
-        <View style={ill.caosBubble}>
-          <Text style={ill.caosBubbleText}>No sabía</Text>
+        <View style={[ill.caosBubble, { borderColor: t.border }]}>
+          <Text style={[ill.caosBubbleText, { color: textColor }]}>No sabía</Text>
         </View>
-        <View style={ill.caosBubble}>
-          <Text style={ill.caosBubbleText}>¿Quién lo hace?</Text>
+        <View style={[ill.caosBubble, { borderColor: t.border }]}>
+          <Text style={[ill.caosBubbleText, { color: textColor }]}>¿Quién lo hace?</Text>
         </View>
-        <Text style={ill.caosLabel}>CAOS TOTAL</Text>
+        <Text style={[ill.caosLabel, { color: textColor }]}>CAOS TOTAL</Text>
       </View>
       <View style={ill.caosCol}>
-        <View style={[ill.caosCircle, { backgroundColor: '#FEF08A' }]}>
+        <View style={[ill.caosCircle, { backgroundColor: t.isDark ? '#3B3A00' : '#FEF08A' }]}>
           <Text style={ill.caosEmoji}>😊</Text>
         </View>
         <View style={[ill.caosBubble, { borderColor: '#86EFAC' }]}>
-          <Text style={ill.caosBubbleText}>Vida estructurada</Text>
+          <Text style={[ill.caosBubbleText, { color: textColor }]}>Vida estructurada</Text>
         </View>
         <View style={[ill.caosBubble, { borderColor: '#86EFAC' }]}>
-          <Text style={ill.caosBubbleText}>Decisiones inmediatas</Text>
+          <Text style={[ill.caosBubbleText, { color: textColor }]}>Decisiones inmediatas</Text>
         </View>
         <View style={[ill.caosBubble, { borderColor: '#86EFAC' }]}>
-          <Text style={ill.caosBubbleText}>Paz mental</Text>
+          <Text style={[ill.caosBubbleText, { color: textColor }]}>Paz mental</Text>
         </View>
         <Text style={[ill.caosLabel, { color: PRIMARY }]}>SINTONÍA</Text>
       </View>
@@ -349,14 +339,10 @@ function PorQueFamSyncIllustration({ t }: { t: Theme }) {
 }
 
 const ill = StyleSheet.create({
-  welcomeOuter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  logoBox: {
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  famsyncBig: { color: '#fff', fontSize: 26, fontWeight: '800', letterSpacing: 2.5 },
-  welcomeDesc: { fontSize: 17, fontWeight: '600', marginTop: 20, textAlign: 'center' },
+  welcomeOuter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 },
+  welcomeLogo:  { width: 110, height: 110 },
+  welcomeName: { fontSize: 32, fontWeight: '700', letterSpacing: -0.5, color: '#111827' },
+  welcomeDesc: { fontSize: 16, fontWeight: '500', textAlign: 'center', letterSpacing: 0.2 },
   oneMapOuter: { flex: 1, alignItems: 'center', paddingHorizontal: 20, paddingTop: 32, paddingBottom: 12 },
   oneMapTextBlock: { alignItems: 'center' },
   oneMapTitle: { fontSize: 22, fontWeight: '800', color: '#111827', textAlign: 'center', lineHeight: 30 },
@@ -365,7 +351,7 @@ const ill = StyleSheet.create({
   oneMapCenter: {
     width: BS, height: BS, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
   },
-  oneMapFamsync: { fontSize: 11, color: 'rgba(0,0,0,0.25)', fontWeight: '600', marginTop: 4 },
+  oneMapFamsyncImg: { width: 72, height: 16, marginTop: 4 },
   oneMapCircle: { alignItems: 'center' },
   oneMapIconWrap: { width: CS, height: CS, borderRadius: CS / 2, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
   oneMapEmoji: { fontSize: 22 },
@@ -820,7 +806,7 @@ const SLIDES: SlideData[] = [
     accent: ACCENTS[0],
     title: '',
     subtitle: '',
-    ctaText: 'Siguiente',
+    ctaText: 'Comenzar',
     skipText: null,
     renderIllustration: (t) => <WelcomeIllustration t={t} />,
   },
@@ -846,17 +832,17 @@ const SLIDES: SlideData[] = [
     id: 's4',
     accent: ACCENTS[3],
     title: 'Del caos a la sintonía',
-    subtitle: 'Descubre cómo cambia tu vida familiar con FamSync',
+    subtitle: 'Cuando todos tienen visibilidad, la familia fluye sin fricciones ni sorpresas.',
     ctaText: 'Siguiente',
     skipText: 'Anterior',
-    renderIllustration: () => <DelCaosIllustration />,
+    renderIllustration: (t) => <DelCaosIllustration t={t} />,
   },
   {
     id: 's5',
     accent: ACCENTS[4],
     title: '¿Por qué elegir ',
     titleHighlight: 'FamSync?',
-    subtitle: 'Diseñado para equilibrar tu vida familiar y profesional con total armonía.',
+    subtitle: 'Herramientas de nivel profesional diseñadas para la vida familiar moderna.',
     ctaText: 'Siguiente',
     skipText: 'Anterior',
     renderIllustration: (t) => <PorQueFamSyncIllustration t={t} />,
@@ -864,8 +850,8 @@ const SLIDES: SlideData[] = [
   {
     id: 's6',
     accent: ACCENTS[5],
-    title: 'Asigna tu Rol y elige un Color',
-    subtitle: 'Personaliza cómo te verán los demás miembros de la familia.',
+    title: 'Personaliza tu identidad',
+    subtitle: 'Elige tu rol y color para que el grupo sepa quién eres y qué permisos tienes.',
     ctaText: 'Continuar',
     skipText: 'Anterior',
     renderIllustration: (t) => <RolColorIllustration t={t} />,
@@ -873,9 +859,9 @@ const SLIDES: SlideData[] = [
   {
     id: 's7',
     accent: ACCENTS[6],
-    title: 'Integra tu ecosistema digital',
-    subtitle: 'Sincroniza tus calendarios existentes para que FamSync sea tu centro de control unificado.',
-    ctaText: 'Finalizar Configuración',
+    title: 'Tu centro de control digital',
+    subtitle: 'Conecta tus calendarios existentes y centraliza todo en un solo ecosistema.',
+    ctaText: 'Empezar a usar FamSync',
     skipText: 'Anterior',
     renderIllustration: (t) => <IntegraEcosistemaIllustration t={t} />,
   },
@@ -886,9 +872,43 @@ const SLIDES: SlideData[] = [
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const t = useTheme();
-  const flatRef    = useRef<FlatList>(null);
-  const idxRef     = useRef(0);
+  const { width: SW, height: SH } = useWindowDimensions();
+  // Cap slide dimensions so the component looks like a mobile app on all platforms
+  const slideW  = SW;
+  const ilHeight = Math.min(Math.floor(SH * 0.58), 400);
+  const flatRef = useRef<FlatList>(null);
+  const idxRef  = useRef(0);
   const [activeIdx, setActiveIdx] = useState(0);
+
+  // ── Animations ──────────────────────────────────────────────────────────────
+  const contentOpacity  = useRef(new Animated.Value(1)).current;
+  const contentSlide    = useRef(new Animated.Value(0)).current;
+  const btnScale        = useRef(new Animated.Value(1)).current;
+  const dotAnims        = useRef(SLIDES.map((_, i) => new Animated.Value(i === 0 ? 1 : 0))).current;
+
+  useEffect(() => {
+    // Fade + rise content on slide change
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(contentOpacity, { toValue: 0, duration: 90, useNativeDriver: true }),
+        Animated.timing(contentSlide,   { toValue: 10, duration: 90, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(contentOpacity, { toValue: 1, duration: 260, useNativeDriver: true }),
+        Animated.spring(contentSlide,   { toValue: 0, useNativeDriver: true, tension: 70, friction: 9 }),
+      ]),
+    ]).start();
+
+    // Animate dots
+    SLIDES.forEach((_, i) => {
+      Animated.spring(dotAnims[i], {
+        toValue: i === activeIdx ? 1 : 0,
+        useNativeDriver: false,
+        tension: 130,
+        friction: 8,
+      }).start();
+    });
+  }, [activeIdx]);
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -900,29 +920,17 @@ export default function OnboardingScreen() {
     }
   ).current;
 
-  // getItemLayout prevents scrollToIndex from failing silently
   const getItemLayout = (_: unknown, index: number) => ({
-    length: W,
-    offset: W * index,
+    length: slideW,
+    offset: slideW * index,
     index,
   });
 
-  const goNext = () => {
-    const next = idxRef.current + 1;
-    if (next < SLIDES.length) {
-      flatRef.current?.scrollToIndex({ index: next, animated: true });
-      idxRef.current = next;
-      setActiveIdx(next);
-    }
-  };
-
-  const goBack = () => {
-    const prev = activeIdx - 1;
-    if (prev >= 0) {
-      flatRef.current?.scrollToIndex({ index: prev, animated: true });
-      idxRef.current = prev;
-      setActiveIdx(prev);
-    }
+  const navigate = (index: number) => {
+    if (index < 0 || index >= SLIDES.length) return;
+    flatRef.current?.scrollToIndex({ index, animated: true });
+    idxRef.current = index;
+    setActiveIdx(index);
   };
 
   const done = async () => {
@@ -931,15 +939,14 @@ export default function OnboardingScreen() {
     router.replace('/(tabs)');
   };
 
-  const isLast      = activeIdx === SLIDES.length - 1;
-  const current     = SLIDES[activeIdx];
-  const ilBg        = t.isDark ? current.accent.darkBg : current.accent.lightBg;
+  const isLast  = activeIdx === SLIDES.length - 1;
+  const current = SLIDES[activeIdx];
 
   const renderSlide = ({ item }: { item: SlideData }) => (
     <View
       style={{
-        width: W,
-        height: IL_HEIGHT,
+        width: slideW,
+        height: ilHeight,
         backgroundColor: t.isDark ? item.accent.darkBg : item.accent.lightBg,
       }}
     >
@@ -949,96 +956,125 @@ export default function OnboardingScreen() {
 
   return (
     <View style={[s.screen, { backgroundColor: t.bg }]}>
+      <View style={s.centerWrap}>
 
-      {/* Illustration pager */}
-      <FlatList
-        ref={flatRef}
-        data={SLIDES}
-        keyExtractor={(item) => item.id}
-        renderItem={renderSlide}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
-        scrollEventThrottle={16}
-        getItemLayout={getItemLayout}
-        style={{ height: IL_HEIGHT, flexGrow: 0 }}
-      />
+        {/* ── Illustration pager ──────────────────────────────────────────── */}
+        <FlatList
+          ref={flatRef}
+          data={SLIDES}
+          keyExtractor={(item) => item.id}
+          renderItem={renderSlide}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
+          scrollEventThrottle={16}
+          getItemLayout={getItemLayout}
+          style={{ height: ilHeight, flexGrow: 0 }}
+        />
 
-      {/* Bottom content */}
-      <View style={[s.bottom, { backgroundColor: t.bg, paddingBottom: insets.bottom + 24 }]}>
+        {/* ── Bottom panel ────────────────────────────────────────────────── */}
+        <View style={[s.bottom, { backgroundColor: t.bg, paddingBottom: insets.bottom + 20 }]}>
 
-        {/* Text */}
-        <View style={s.textWrap}>
-          {(current.title || current.titleHighlight || current.subtitle) ? (
-            <>
-              {(current.title || current.titleHighlight) ? (
-                <Text style={[s.title, { color: t.text }]}>
-                  {current.title}
-                  {current.titleHighlight ? (
-                    <Text style={{ color: PRIMARY }}>{current.titleHighlight}</Text>
-                  ) : null}
-                </Text>
-              ) : null}
-              {current.subtitle ? (
-                <Text style={[s.subtitle, { color: t.muted }]}>{current.subtitle}</Text>
-              ) : null}
-            </>
-          ) : null}
-        </View>
-
-        {/* Dots */}
-        <View style={s.dots}>
-          {SLIDES.map((slide, i) => (
-            <Pressable
-              key={slide.id}
-              hitSlop={8}
-              onPress={() => {
-                flatRef.current?.scrollToIndex({ index: i, animated: true });
-                idxRef.current = i;
-                setActiveIdx(i);
-              }}
-            >
-              <View
-                style={[
-                  s.dot,
-                  i === activeIdx
-                    ? [s.dotActive, { backgroundColor: current.accent.dot }]
-                    : [s.dotInactive, { backgroundColor: t.border }],
-                ]}
-              />
-            </Pressable>
-          ))}
-        </View>
-
-        {/* CTA button */}
-        <Pressable
-          style={({ pressed }) => [s.btn, { opacity: pressed ? 0.88 : 1 }]}
-          onPress={isLast ? done : goNext}
+        {/* Animated text content */}
+        <Animated.View
+          style={[
+            s.textWrap,
+            { opacity: contentOpacity, transform: [{ translateY: contentSlide }] },
+          ]}
         >
-          <Text style={s.btnText}>{current.ctaText}</Text>
-          {!isLast && <Ionicons name="arrow-forward" size={20} color="#fff" />}
-        </Pressable>
-
-        {/* Anterior link (solo en pantallas intermedias) */}
-        {current.skipText === 'Anterior' ? (
-          <Pressable onPress={goBack} hitSlop={12} style={s.anteriorWrap}>
-            <Text style={[s.skipText, { color: t.muted }]}>Anterior</Text>
-          </Pressable>
-        ) : null}
-
-        {/* Step label + Footer (Pantallas 6 y 7) */}
-        {(activeIdx === 5 || activeIdx === 6) && (
-          <View style={s.bottomMeta}>
-            <Text style={[s.stepLabel, { color: t.muted }]}>
-              Paso {activeIdx + 1} de {SLIDES.length}
+          {(current.title || current.titleHighlight) ? (
+            <Text style={[s.title, { color: t.text }]}>
+              {current.title}
+              {current.titleHighlight
+                ? <Text style={{ color: PRIMARY }}>{current.titleHighlight}</Text>
+                : null}
             </Text>
-            {isLast && (
-              <Text style={[s.footerText, { color: t.muted }]}>FamSync v1.2 - Tu familia, sincronizada.</Text>
-            )}
+          ) : null}
+          {current.subtitle ? (
+            <Text style={[s.subtitle, { color: t.muted }]}>{current.subtitle}</Text>
+          ) : null}
+        </Animated.View>
+
+        {/* ── Navigation row: back | dots | counter ─────────────────────── */}
+        <View style={s.navRow}>
+
+          {/* Back chevron */}
+          <Pressable
+            onPress={() => navigate(activeIdx - 1)}
+            disabled={activeIdx === 0}
+            hitSlop={12}
+            style={[s.navSide, { opacity: activeIdx > 0 ? 1 : 0 }]}
+          >
+            <View style={[s.backCircle, { backgroundColor: t.isDark ? '#1F2937' : '#F3F4F6' }]}>
+              <Ionicons name="chevron-back" size={18} color={t.muted} />
+            </View>
+          </Pressable>
+
+          {/* Animated dots */}
+          <View style={s.dots}>
+            {SLIDES.map((slide, i) => (
+              <Pressable key={slide.id} onPress={() => navigate(i)} hitSlop={8}>
+                <Animated.View
+                  style={[
+                    s.dot,
+                    {
+                      backgroundColor: i === activeIdx ? current.accent.dot : t.border,
+                      width: dotAnims[i].interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [6, 22],
+                      }),
+                    },
+                  ]}
+                />
+              </Pressable>
+            ))}
           </View>
+
+          {/* Slide counter */}
+          <View style={s.navSide}>
+            <Text style={[s.counter, { color: t.muted }]}>
+              {activeIdx + 1}
+              <Text style={{ opacity: 0.45 }}>/{SLIDES.length}</Text>
+            </Text>
+          </View>
+        </View>
+
+        {/* ── CTA button with spring press ──────────────────────────────── */}
+        <Animated.View style={{ transform: [{ scale: btnScale }] }}>
+          <Pressable
+            style={s.btn}
+            onPress={isLast ? done : () => navigate(activeIdx + 1)}
+            onPressIn={() =>
+              Animated.spring(btnScale, {
+                toValue: 0.97,
+                useNativeDriver: true,
+                tension: 200,
+                friction: 7,
+              }).start()
+            }
+            onPressOut={() =>
+              Animated.spring(btnScale, {
+                toValue: 1,
+                useNativeDriver: true,
+                tension: 200,
+                friction: 7,
+              }).start()
+            }
+          >
+            <Text style={s.btnText}>{current.ctaText}</Text>
+            {!isLast && <Ionicons name="arrow-forward" size={20} color="#fff" />}
+          </Pressable>
+        </Animated.View>
+
+        {/* Footer on last slide */}
+        {isLast && (
+          <Text style={[s.footerText, { color: t.muted }]}>
+            FamSync · Tu familia, sincronizada
+          </Text>
         )}
+        </View>
       </View>
     </View>
   );
@@ -1047,42 +1083,63 @@ export default function OnboardingScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  screen: { flex: 1 },
+  screen:     { flex: 1 },
+  centerWrap: { flex: 1, justifyContent: 'center' },
 
   bottom: {
-    flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 24,
-    justifyContent: 'flex-start',
+    paddingTop: 20,
     alignItems: 'stretch',
   },
 
-  accentBar: { height: 3, width: 40, borderRadius: 2, marginBottom: 20, alignSelf: 'center' },
-
-  textWrap: { flex: 1, marginBottom: 8 },
+  textWrap: { minHeight: 64, marginBottom: 12 },
   title: {
-    fontSize: 26, fontWeight: '800', lineHeight: 34, marginBottom: 8, textAlign: 'center',
+    fontSize: 26,
+    fontWeight: '800',
+    lineHeight: 34,
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -0.4,
   },
-  subtitle: { fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  subtitle: {
+    fontSize: 15,
+    lineHeight: 23,
+    textAlign: 'center',
+  },
 
-  dots: { flexDirection: 'row', gap: 8, marginBottom: 24, justifyContent: 'center' },
-  dot: { height: 8, borderRadius: 4 },
-  dotActive: { width: 28 },
-  dotInactive: { width: 8 },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+  navSide: { width: 44, alignItems: 'center' },
+  backCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dots: { flexDirection: 'row', gap: 5, alignItems: 'center' },
+  dot:  { height: 6, borderRadius: 3 },
+  counter: { fontSize: 13, fontWeight: '600' },
 
   btn: {
     backgroundColor: PRIMARY,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    borderRadius: 14,
-    paddingVertical: 16,
-    minHeight: 52,
-    shadowColor: PRIMARY, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 16,
+    height: 56,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  btnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  btnText: { color: '#fff', fontSize: 17, fontWeight: '700', letterSpacing: 0.2 },
 
-  anteriorWrap: { marginTop: 12, alignItems: 'center' },
-  skipText: { fontSize: 14, fontWeight: '500' },
-  bottomMeta: { marginTop: 16, alignItems: 'center', gap: 4 },
-  stepLabel: { fontSize: 13, fontWeight: '500' },
-  footerText: { fontSize: 12, fontWeight: '400' },
+  footerText: { fontSize: 12, textAlign: 'center', marginTop: 14 },
 });

@@ -11,12 +11,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, ['localhost', '127.0.0.1', '10.0.2.2']),
+    CSRF_TRUSTED_ORIGINS=(list, []),
 )
 environ.Env.read_env(BASE_DIR / '.env')
 
 SECRET_KEY = env('SECRET_KEY', default='dev-secret-key-change-in-production')
 DEBUG = env('DEBUG')
 ALLOWED_HOSTS = env('ALLOWED_HOSTS')
+CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS')
 
 # Application definition
 INSTALLED_APPS = [
@@ -31,6 +33,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'accounts',
+    'families',
+    'events',
+    'integrations',
 ]
 
 MIDDLEWARE = [
@@ -87,11 +92,8 @@ USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS - allow mobile app (Expo dev server)
-CORS_ALLOWED_ORIGINS = env.list(
-    'CORS_ALLOWED_ORIGINS',
-    default=['http://localhost:8081', 'http://127.0.0.1:8081', 'exp://127.0.0.1:8081'],
-)
+# CORS - open for mobile clients (native apps don't enforce CORS; Expo Go web mode does)
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 # REST Framework
@@ -124,8 +126,19 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@famsync.local')
 
-# Google OAuth
+# Google OAuth (Sign-In)
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
+
+# Google Calendar OAuth (separate credentials from Sign-In)
+GOOGLE_CALENDAR_CLIENT_ID = env('GOOGLE_CALENDAR_CLIENT_ID', default='')
+GOOGLE_CALENDAR_CLIENT_SECRET = env('GOOGLE_CALENDAR_CLIENT_SECRET', default='')
+GOOGLE_CALENDAR_REDIRECT_URI = env(
+    'GOOGLE_CALENDAR_REDIRECT_URI',
+    default='https://famsync-api-dev.spotynet.com/api/integrations/google-calendar/callback/',
+)
+
+# Fernet key for encrypting OAuth tokens at rest
+FIELD_ENCRYPTION_KEY = env('FIELD_ENCRYPTION_KEY', default='')
 
 # OTP
 OTP_EXPIRY_MINUTES = env.int('OTP_EXPIRY_MINUTES', default=15)

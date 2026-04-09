@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  useWindowDimensions,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -19,26 +22,176 @@ import { signInWithGoogle } from '../lib/googleAuth';
 import { useColorScheme } from '../hooks/use-color-scheme';
 
 const PRIMARY = '#34C759';
-const LOGO_GREEN = '#1D7063';
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function StepBar({ current }: { current: number }) {
+  return (
+    <View style={bar.row}>
+      <View style={[bar.seg, { backgroundColor: PRIMARY }]} />
+      <View style={[bar.seg, { backgroundColor: current >= 1 ? PRIMARY : '#E2E8F0' }]} />
+    </View>
+  );
+}
+
+const bar = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 6, marginBottom: 40, height: 4 },
+  seg: { flex: 1, borderRadius: 2 },
+});
+
+function ErrorNote({ msg, isDark }: { msg: string; isDark: boolean }) {
+  return (
+    <View style={[en.wrap, { backgroundColor: isDark ? '#2C1515' : '#FEF2F2' }]}>
+      <Ionicons name="alert-circle" size={15} color="#EF4444" />
+      <Text style={en.txt}>{msg}</Text>
+    </View>
+  );
+}
+
+const en = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    padding: 12, borderRadius: 12, marginTop: 8, marginBottom: 4,
+  },
+  txt: { color: '#EF4444', fontSize: 13, fontWeight: '500', flex: 1, lineHeight: 18 },
+});
+
+// ── OTP Cell ──────────────────────────────────────────────────────────────────
+
+type CellColors = { bgSoft: string; text: string; border: string };
+
+function OtpCell({
+  digit, focused, error, isDark, c, size,
+}: {
+  digit: string; focused: boolean; error: boolean;
+  isDark: boolean; c: CellColors; size: number;
+}) {
+  const scale         = useRef(new Animated.Value(1)).current;
+  const cursorOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (digit) {
+      Animated.sequence([
+        Animated.spring(scale, { toValue: 1.13, useNativeDriver: true, tension: 280, friction: 6 }),
+        Animated.spring(scale, { toValue: 1,    useNativeDriver: true, tension: 280, friction: 8 }),
+      ]).start();
+    } else {
+      scale.setValue(1);
+    }
+  }, [digit]);
+
+  useEffect(() => {
+    if (focused && !digit) {
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(cursorOpacity, { toValue: 0, duration: 520, useNativeDriver: true }),
+          Animated.timing(cursorOpacity, { toValue: 1, duration: 520, useNativeDriver: true }),
+        ])
+      );
+      loop.start();
+      return () => { loop.stop(); cursorOpacity.setValue(1); };
+    }
+  }, [focused, digit]);
+
+  const borderColor = error
+    ? '#EF4444'
+    : focused
+    ? PRIMARY
+    : digit
+    ? `${PRIMARY}99`
+    : c.border;
+
+  const bgColor = error && digit
+    ? (isDark ? '#2C1515' : '#FFF1F1')
+    : focused
+    ? (isDark ? `${PRIMARY}18` : `${PRIMARY}0A`)
+    : digit
+    ? (isDark ? `${PRIMARY}14` : `${PRIMARY}07`)
+    : c.bgSoft;
+
+  return (
+    <Animated.View style={[
+      oc.cell,
+      {
+        width: size, height: size,
+        borderColor,
+        backgroundColor: bgColor,
+        borderWidth: focused ? 2.5 : digit ? 2 : 1.5,
+        transform: [{ scale }],
+      },
+    ]}>
+      {digit ? (
+        <Text style={[oc.digit, { color: error ? '#EF4444' : c.text }]}>{digit}</Text>
+      ) : focused ? (
+        <Animated.View style={[oc.cursor, { opacity: cursorOpacity }]} />
+      ) : null}
+    </Animated.View>
+  );
+}
+
+const oc = StyleSheet.create({
+  cell: {
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  digit: {
+    fontSize: 26,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    includeFontPadding: false,
+  },
+  cursor: {
+    width: 2,
+    height: 26,
+    borderRadius: 1,
+    backgroundColor: PRIMARY,
+  },
+});
+
+// ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function LoginScreen() {
   const { loginWithGoogle, requestEmailOTP, verifyEmailOTP } = useAuth();
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [step, setStep] = useState<'choose' | 'email' | 'verify'>('choose');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme() ?? 'light';
-  const isDark = colorScheme === 'dark';
+  const [email, setEmail]           = useState('');
+  const [otpValue, setOtpValue]     = useState('');
+  const [step, setStep]             = useState<'choose' | 'email' | 'verify'>('choose');
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const hiddenInputRef = useRef<TextInput>(null);
 
-  const colors = {
-    bg: isDark ? '#0F1419' : '#FFFFFF',
+  const insets = useSafeAreaInsets();
+  const { height: SH, width: SW } = useWindowDimensions();
+  const BOX_GAP  = 10;
+  const BOX_SIZE = Math.min(54, Math.floor((SW - 48 - BOX_GAP * 5) / 6));
+  const isDark = (useColorScheme() ?? 'light') === 'dark';
+
+  const c = {
+    bg:     isDark ? '#0F1419' : '#FFFFFF',
     bgSoft: isDark ? '#1A1F26' : '#F9FAFB',
-    text: isDark ? '#F3F4F6' : '#111827',
-    textMuted: isDark ? '#9CA3AF' : '#6B7280',
+    bgCard: isDark ? '#1A1F26' : '#FAFAFA',
+    text:   isDark ? '#F3F4F6' : '#111827',
+    muted:  isDark ? '#9CA3AF' : '#6B7280',
     border: isDark ? '#374151' : '#E5E7EB',
-    error: '#EF4444',
+  };
+
+  // Resend countdown
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown(n => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  const handleOtpChange = (val: string) => {
+    setOtpValue(val.replace(/\D/g, '').slice(0, 6));
+    setError('');
   };
 
   const handleGoogleSignIn = async () => {
@@ -60,16 +213,15 @@ export default function LoginScreen() {
   };
 
   const handleRequestOTP = async () => {
-    if (!email.trim()) {
-      setError('Introduce tu correo electrónico');
-      return;
-    }
+    if (!email.trim()) { setError('Introduce tu correo electrónico'); return; }
     setError('');
     setLoading(true);
     try {
       await requestEmailOTP(email.trim());
       setStep('verify');
-      setCode('');
+      setOtpValue('');
+      setResendCooldown(30);
+      setTimeout(() => hiddenInputRef.current?.focus(), 400);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo enviar el código');
     } finally {
@@ -77,282 +229,373 @@ export default function LoginScreen() {
     }
   };
 
-  const handleVerifyOTP = async () => {
-    if (code.length !== 6) {
-      setError('Ingresa el código de 6 dígitos');
-      return;
-    }
+  const handleResend = async () => {
+    if (resendCooldown > 0 || loading) return;
     setError('');
     setLoading(true);
     try {
-      await verifyEmailOTP(email.trim(), code);
-      router.replace('/');
+      await requestEmailOTP(email.trim());
+      setOtpValue('');
+      setResendCooldown(30);
+      setTimeout(() => hiddenInputRef.current?.focus(), 200);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Código inválido o caducado');
+      setError(err instanceof Error ? err.message : 'No se pudo reenviar el código');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBack = () => {
+  const handleVerifyOTP = async () => {
+    if (otpValue.length !== 6) { setError('Ingresa los 6 dígitos'); return; }
+    setError('');
+    setLoading(true);
+    try {
+      await verifyEmailOTP(email.trim(), otpValue);
+      router.replace('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Código inválido o caducado');
+      setOtpValue('');
+      setTimeout(() => hiddenInputRef.current?.focus(), 200);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const goBack = () => {
     setStep(step === 'verify' ? 'email' : 'choose');
     setError('');
-    setCode('');
+    setOtpValue('');
   };
 
   return (
-    <View style={[styles.wrapper, { backgroundColor: colors.bg }]}>
+    <View style={[s.root, { backgroundColor: c.bg }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboard}
+        style={s.kav}
       >
         <ScrollView
           contentContainerStyle={[
-            styles.scrollContent,
-            {
-              paddingTop: insets.top + 8,
-              paddingBottom: insets.bottom + 24,
-              paddingHorizontal: 24,
-            },
+            s.scroll,
+            { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {step !== 'choose' && (
-            <Pressable onPress={handleBack} style={styles.backButton} hitSlop={12}>
-              <Ionicons name="arrow-back" size={24} color={colors.text} />
-            </Pressable>
-          )}
 
+          {/* ── CHOOSE ─────────────────────────────────────────────────────── */}
           {step === 'choose' && (
-            <>
-              <View style={styles.hero}>
-                <View style={[styles.logoBox, { backgroundColor: LOGO_GREEN }]}>
-                  <Text style={styles.logoText}>FAMSYNC</Text>
-                </View>
-                <Text style={[styles.heroTitle, { color: colors.text }]}>Tu familia, en sintonía.</Text>
-                <Text style={[styles.heroSub, { color: colors.textMuted }]}>
-                  Organiza, comparte y conecta con los que más quieres en un solo lugar.
+            <View style={[s.chooseWrap, { minHeight: SH - insets.top - insets.bottom - 48 }]}>
+
+              {/* Hero + buttons grouped in center */}
+              <View style={s.heroGroup}>
+                <Image
+                  source={require('../assets/images/famsync_logo.png')}
+                  style={s.heroLogo}
+                  resizeMode="contain"
+                />
+                {!isDark && (
+                  <Text style={s.heroName}>FamSync</Text>
+                )}
+                <Text style={[s.tagline, { color: c.muted }]}>
+                  Tu familia, en sintonía.
                 </Text>
-              </View>
 
-              <Pressable
-                style={({ pressed }) => [
-                  styles.primaryBtn,
-                  { opacity: pressed ? 0.9 : 1 },
-                ]}
-                onPress={() => setStep('email')}
-              >
-                <Text style={styles.primaryBtnText}>Comenzar</Text>
-              </Pressable>
+                <View style={s.heroActions}>
+                {/* Google — primary on landing */}
+                <Pressable
+                  style={({ pressed }) => [
+                    s.googleBtn,
+                    { borderColor: c.border, backgroundColor: c.bgCard, opacity: pressed ? 0.82 : 1 },
+                  ]}
+                  onPress={handleGoogleSignIn}
+                  disabled={loading}
+                >
+                  {loading
+                    ? <ActivityIndicator color={c.muted} size="small" />
+                    : <>
+                        <Ionicons name="logo-google" size={20} color="#4285F4" />
+                        <Text style={[s.googleBtnText, { color: c.text }]}>Continuar con Google</Text>
+                      </>
+                  }
+                </Pressable>
 
-              <Pressable
-                style={({ pressed }) => [
-                  styles.secondaryBtn,
-                  { borderColor: colors.border, opacity: pressed ? 0.9 : 1 },
-                ]}
-                onPress={() => setStep('email')}
-              >
-                <Text style={[styles.secondaryBtnText, { color: colors.text }]}>Iniciar Sesión</Text>
-              </Pressable>
+                <View style={s.orRow}>
+                  <View style={[s.orLine, { backgroundColor: c.border }]} />
+                  <Text style={[s.orLabel, { color: c.muted }]}>o con tu correo</Text>
+                  <View style={[s.orLine, { backgroundColor: c.border }]} />
+                </View>
 
-              <Text style={[styles.legal, { color: colors.textMuted }]}>
-                Al continuar, aceptas nuestras{' '}
-                <Text style={styles.legalLink}>Condiciones de Servicio</Text> y confirmas que has leído nuestra{' '}
-                <Text style={styles.legalLink}>Política de Privacidad</Text>.
+                <Pressable
+                  style={({ pressed }) => [s.primaryBtn, { opacity: pressed ? 0.88 : 1 }]}
+                  onPress={() => setStep('email')}
+                >
+                  <Ionicons name="mail-outline" size={19} color="#fff" />
+                  <Text style={s.primaryBtnText}>Usar correo electrónico</Text>
+                </Pressable>
+
+                {error ? <ErrorNote msg={error} isDark={isDark} /> : null}
+                </View>{/* heroActions */}
+              </View>{/* heroGroup */}
+
+              {/* Legal */}
+              <Text style={[s.legal, { color: c.muted }]}>
+                Al continuar aceptas nuestras{' '}
+                <Text style={[s.legalLink, { color: PRIMARY }]}>Condiciones</Text>
+                {' '}y nuestra{' '}
+                <Text style={[s.legalLink, { color: PRIMARY }]}>Política de Privacidad</Text>.
               </Text>
-            </>
+            </View>
           )}
 
+          {/* ── EMAIL ──────────────────────────────────────────────────────── */}
           {step === 'email' && (
-            <>
-              <View style={styles.hero}>
-                <View style={[styles.logoBoxSmall, { backgroundColor: LOGO_GREEN }]}>
-                  <Text style={styles.logoTextSmall}>FAMSYNC</Text>
-                </View>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>Tu correo</Text>
-                <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
-                  Te enviaremos un código de 6 dígitos
+            <View style={s.stepWrap}>
+              <Pressable onPress={goBack} style={s.backBtn} hitSlop={16}>
+                <Ionicons name="arrow-back" size={22} color={c.text} />
+              </Pressable>
+
+              <StepBar current={0} />
+
+              <View style={s.stepHead}>
+                <Image
+                  source={require('../assets/images/famsync_logo.png')}
+                  style={s.stepLogo}
+                  resizeMode="contain"
+                />
+                <Text style={[s.stepTitle, { color: c.text }]}>¿Cuál es tu correo?</Text>
+                <Text style={[s.stepSub, { color: c.muted }]}>
+                  Te enviaremos un código de verificación de 6 dígitos.
                 </Text>
               </View>
+
               <TextInput
-                style={[styles.input, { backgroundColor: colors.bgSoft, borderColor: colors.border, color: colors.text }]}
+                style={[
+                  s.input,
+                  {
+                    backgroundColor: c.bgSoft,
+                    borderColor: emailFocused ? PRIMARY : c.border,
+                    color: c.text,
+                  },
+                ]}
                 placeholder="nombre@ejemplo.com"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={c.muted}
                 value={email}
-                onChangeText={(t) => { setEmail(t); setError(''); }}
+                onChangeText={t => { setEmail(t); setError(''); }}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => setEmailFocused(false)}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
                 autoComplete="email"
+                autoFocus
                 editable={!loading}
+                returnKeyType="send"
+                onSubmitEditing={handleRequestOTP}
               />
+
+              {error ? <ErrorNote msg={error} isDark={isDark} /> : null}
+
               <Pressable
                 style={({ pressed }) => [
-                  styles.primaryBtn,
-                  { opacity: loading ? 0.7 : pressed ? 0.9 : 1 },
+                  s.primaryBtn,
+                  { marginTop: 8, opacity: loading ? 0.7 : pressed ? 0.88 : 1 },
                 ]}
                 onPress={handleRequestOTP}
                 disabled={loading}
               >
-                {loading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.primaryBtnText}>Enviar código</Text>
-                )}
+                {loading
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <>
+                      <Text style={s.primaryBtnText}>Enviar código</Text>
+                      <Ionicons name="arrow-forward" size={18} color="#fff" />
+                    </>
+                }
               </Pressable>
-              <View style={styles.dividerRow}>
-                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-                <Text style={[styles.dividerText, { color: colors.textMuted }]}>o</Text>
-                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+
+              <View style={[s.orRow, { marginTop: 20 }]}>
+                <View style={[s.orLine, { backgroundColor: c.border }]} />
+                <Text style={[s.orLabel, { color: c.muted }]}>o</Text>
+                <View style={[s.orLine, { backgroundColor: c.border }]} />
               </View>
+
               <Pressable
                 style={({ pressed }) => [
-                  styles.secondaryBtn,
-                  { borderColor: colors.border, opacity: loading ? 0.7 : pressed ? 0.9 : 1 },
+                  s.googleBtn,
+                  { borderColor: c.border, backgroundColor: c.bgCard, opacity: loading ? 0.7 : pressed ? 0.82 : 1 },
                 ]}
                 onPress={handleGoogleSignIn}
                 disabled={loading}
               >
-                {loading ? (
-                  <ActivityIndicator color={colors.text} size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="logo-google" size={20} color={colors.text} />
-                    <Text style={[styles.secondaryBtnText, { color: colors.text }]}>Continuar con Google</Text>
-                  </>
-                )}
+                <Ionicons name="logo-google" size={20} color="#4285F4" />
+                <Text style={[s.googleBtnText, { color: c.text }]}>Continuar con Google</Text>
               </Pressable>
-            </>
+            </View>
           )}
 
+          {/* ── VERIFY ─────────────────────────────────────────────────────── */}
           {step === 'verify' && (
-            <>
-              <Text style={[styles.protocolTitle, { color: colors.text }]}>Protocolo de Acceso</Text>
-              <Text style={[styles.protocolSub, { color: colors.textMuted }]}>
-                Ingresa el código de 6 digitos enviado a tu dispositivo
-              </Text>
-
-              <TextInput
-                style={[styles.otpInput, { backgroundColor: colors.bgSoft, borderColor: colors.border, color: colors.text }]}
-                placeholder="000000"
-                placeholderTextColor={colors.textMuted}
-                value={code}
-                onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 6))}
-                keyboardType="number-pad"
-                maxLength={6}
-                autoFocus
-                editable={!loading}
-              />
-
-              <Pressable onPress={handleRequestOTP} style={styles.resendWrap}>
-                <Text style={styles.resendText}>No recibiste el código? Reenviar</Text>
+            <View style={s.stepWrap}>
+              <Pressable onPress={goBack} style={s.backBtn} hitSlop={16}>
+                <Ionicons name="arrow-back" size={22} color={c.text} />
               </Pressable>
+
+              <StepBar current={1} />
+
+              <View style={s.stepHead}>
+                <View style={[s.mailBadge, { backgroundColor: `${PRIMARY}18` }]}>
+                  <Ionicons name="mail" size={30} color={PRIMARY} />
+                </View>
+                <Text style={[s.stepTitle, { color: c.text }]}>Revisa tu correo</Text>
+                <Text style={[s.stepSub, { color: c.muted }]}>
+                  Enviamos un código de 6 dígitos a{'\n'}
+                  <Text style={{ color: c.text, fontWeight: '600' }}>{email}</Text>
+                </Text>
+              </View>
+
+              {/* 6-cell OTP — single hidden input + visual overlay */}
+              <Pressable
+                style={s.otpWrap}
+                onPress={() => hiddenInputRef.current?.focus()}
+              >
+                <View style={[s.otpRow, { gap: BOX_GAP }]}>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <OtpCell
+                      key={i}
+                      digit={otpValue[i] || ''}
+                      focused={i === otpValue.length && !loading}
+                      error={!!error}
+                      isDark={isDark}
+                      c={c}
+                      size={BOX_SIZE}
+                    />
+                  ))}
+                </View>
+                <TextInput
+                  ref={hiddenInputRef}
+                  style={s.hiddenInput}
+                  value={otpValue}
+                  onChangeText={handleOtpChange}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  caretHidden
+                  autoComplete="one-time-code"
+                  textContentType="oneTimeCode"
+                  editable={!loading}
+                  autoFocus
+                />
+              </Pressable>
+
+              {error ? <ErrorNote msg={error} isDark={isDark} /> : null}
 
               <Pressable
                 style={({ pressed }) => [
-                  styles.primaryBtn,
-                  { opacity: loading || code.length !== 6 ? 0.6 : pressed ? 0.9 : 1 },
+                  s.primaryBtn,
+                  {
+                    marginTop: 28,
+                    opacity: loading || otpValue.length !== 6 ? 0.5 : pressed ? 0.88 : 1,
+                  },
                 ]}
                 onPress={handleVerifyOTP}
-                disabled={loading || code.length !== 6}
+                disabled={loading || otpValue.length !== 6}
               >
-                {loading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.primaryBtnText}>Verificar código</Text>
+                {loading
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={s.primaryBtnText}>Verificar código</Text>
+                }
+              </Pressable>
+
+              {/* Resend */}
+              <Pressable
+                onPress={handleResend}
+                style={s.resendRow}
+                disabled={resendCooldown > 0 || loading}
+              >
+                <Text style={[s.resendBase, { color: c.muted }]}>
+                  {resendCooldown > 0
+                    ? `Reenviar código en ${resendCooldown}s`
+                    : '¿No llegó el código? '}
+                </Text>
+                {resendCooldown === 0 && (
+                  <Text style={[s.resendAction, { color: PRIMARY }]}>Reenviar</Text>
                 )}
               </Pressable>
-            </>
+            </View>
           )}
 
-          {error ? (
-            <View style={[styles.errorBanner, { backgroundColor: isDark ? '#3F1D1D' : '#FEF2F2', marginTop: 16 }]}>
-              <Ionicons name="alert-circle" size={18} color={colors.error} />
-              <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
-            </View>
-          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: { flex: 1 },
-  keyboard: { flex: 1 },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', minHeight: '100%' },
-  backButton: { alignSelf: 'flex-start', padding: 8, marginBottom: 16 },
-  hero: { alignItems: 'center', marginBottom: 32 },
-  logoBox: {
-    width: 160, height: 160, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
-    gap: 8, marginBottom: 28,
-  },
-  logoText: { color: '#fff', fontSize: 22, fontWeight: '800', letterSpacing: 2.5 },
-  logoBoxSmall: {
-    width: 100, height: 100, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
-    gap: 5, marginBottom: 20,
-  },
-  logoTextSmall: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 2 },
-  heroTitle: { fontSize: 24, fontWeight: '700', marginBottom: 10, textAlign: 'center' },
-  heroSub: { fontSize: 15, lineHeight: 22, textAlign: 'center', paddingHorizontal: 16 },
+// ── Styles ────────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  root:  { flex: 1 },
+  kav:   { flex: 1 },
+  scroll: { flexGrow: 1, paddingHorizontal: 24 },
+
+  // ── Choose
+  chooseWrap: { flex: 1, justifyContent: 'space-between' },
+  heroGroup:   { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  heroActions: { alignSelf: 'stretch', marginTop: 32 },
+  heroLogo: { width: 160, height: 160 },
+  heroName: { fontSize: 32, fontWeight: '700', letterSpacing: -0.5, color: '#111827' },
+  tagline:  { fontSize: 16, lineHeight: 24, textAlign: 'center', marginTop: 4 },
+
+  // ── Shared buttons
   primaryBtn: {
     backgroundColor: PRIMARY,
-    paddingVertical: 18,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 12,
+    height: 56, borderRadius: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, marginBottom: 12,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  primaryBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  secondaryBtn: {
-    borderWidth: 1.5,
-    paddingVertical: 16,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 24,
+  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
+
+  googleBtn: {
+    height: 56, borderRadius: 16, borderWidth: 1.5,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 10, marginBottom: 12,
   },
-  secondaryBtnText: { fontSize: 16, fontWeight: '600' },
-  legal: { fontSize: 12, lineHeight: 18, textAlign: 'center', paddingHorizontal: 8 },
-  legalLink: { textDecorationLine: 'underline', fontWeight: '600' },
-  cardTitle: { fontSize: 20, fontWeight: '700', marginBottom: 6 },
-  cardSubtitle: { fontSize: 15, lineHeight: 22, marginBottom: 20 },
+  googleBtnText: { fontSize: 16, fontWeight: '600' },
+
+  // ── Divider
+  orRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 8 },
+  orLine:  { flex: 1, height: 1 },
+  orLabel: { fontSize: 13, fontWeight: '500' },
+
+  // ── Legal
+  legal:     { fontSize: 12, lineHeight: 18, textAlign: 'center', paddingHorizontal: 8, paddingBottom: 8 },
+  legalLink: { fontWeight: '600' },
+
+  // ── Step screens
+  stepWrap: { flex: 1, paddingTop: 8 },
+  backBtn:  { alignSelf: 'flex-start', padding: 4, marginBottom: 24 },
+
+  stepHead:  { alignItems: 'center', marginBottom: 32 },
+  stepLogo:  { width: 68, height: 68, marginBottom: 20 },
+  mailBadge: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  stepTitle: { fontSize: 26, fontWeight: '700', textAlign: 'center', marginBottom: 10, letterSpacing: -0.5 },
+  stepSub:   { fontSize: 15, lineHeight: 22, textAlign: 'center' },
+
+  // ── Email input
   input: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    fontSize: 16,
-    marginBottom: 20,
+    height: 56, borderWidth: 1.5, borderRadius: 16,
+    paddingHorizontal: 18, fontSize: 16, marginBottom: 8,
   },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 16, gap: 12 },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 14, fontWeight: '500' },
-  protocolTitle: { fontSize: 24, fontWeight: '700', marginBottom: 8 },
-  protocolSub: { fontSize: 15, lineHeight: 22, marginBottom: 24 },
-  otpInput: {
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    fontSize: 24,
-    fontWeight: '700',
-    letterSpacing: 8,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  resendWrap: { alignSelf: 'center', marginBottom: 24 },
-  resendText: { fontSize: 14, color: PRIMARY, fontWeight: '600' },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 14,
-    borderRadius: 12,
-  },
-  errorText: { fontSize: 14, fontWeight: '500', flex: 1 },
+
+  // ── OTP
+  otpWrap: { alignSelf: 'center', marginBottom: 4 },
+  otpRow:  { flexDirection: 'row' },
+  hiddenInput: { position: 'absolute', opacity: 0, width: 1, height: 1 },
+
+  // ── Resend
+  resendRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 20, gap: 2 },
+  resendBase:   { fontSize: 14 },
+  resendAction: { fontSize: 14, fontWeight: '700' },
 });

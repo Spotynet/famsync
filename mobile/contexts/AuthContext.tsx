@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await removeItem(ONBOARDING_DONE_KEY);
       await removeItem(SETUP_DONE_KEY);
       setState({ user: null, isLoading: false, isAuthenticated: false });
-      router.replace('/');
+      router.replace('/login');
     }
   }, []);
 

@@ -17,6 +17,8 @@ export type Member = {
   name: string;
   color: string;
   initials: string;
+  /** From API — family member role */
+  role?: 'admin' | 'member';
 };
 
 export type Category = {
@@ -38,6 +40,10 @@ export type CalEvent = {
   categoryId: string;
   priority: Priority;
   location: string;
+  /** Set when event was imported from Google Calendar */
+  googleEventId?: string | null;
+  createdByMemberId?: string | null;
+  createdByDisplayName?: string | null;
 };
 
 // ─── Reference data ───────────────────────────────────────────────────────────
