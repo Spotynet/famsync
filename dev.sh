@@ -1,35 +1,30 @@
 #!/bin/bash
-# ==========================================
-# FAMSYNC DEV - Start backend and frontend via PM2
-# ==========================================
 
-echo "🚀 Starting FAMSYNC DEV..."
+echo "🚀 Starting FAMSYNC DEV (api + mobile + web)"
 
-# -------------------------
-# Set base directories
-# -------------------------
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$BASE_DIR/backend"
-FRONTEND_DIR="$BASE_DIR/mobile"
+MOBILE_DIR="$BASE_DIR/mobile"
+LANDING_DIR="$BASE_DIR/landing"
 
-# -------------------------
-# Process names and ports
-# -------------------------
 BACKEND_NAME="famsync-api-dev"
-BACKEND_PORT=3006   # Django backend port
+MOBILE_NAME="famsync-dev"
+WEB_NAME="famsync-web-dev"
 
-FRONTEND_NAME="famsync-dev"
-FRONTEND_PORT=3005  # Expo frontend web port
+BACKEND_PORT=3006
+MOBILE_PORT=3005
+WEB_PORT=3013
 
 # -------------------------
-# Delete old PM2 processes
+# 🧹 Clean old processes
 # -------------------------
 echo "🧹 Cleaning old PM2 processes..."
 pm2 delete $BACKEND_NAME 2>/dev/null
-pm2 delete $FRONTEND_NAME 2>/dev/null
+pm2 delete $MOBILE_NAME 2>/dev/null
+pm2 delete $WEB_NAME 2>/dev/null
 
 # -------------------------
-# Start backend (Django)
+# 🐍 Start Backend (Django)
 # -------------------------
 echo "🐍 Starting Django backend ($BACKEND_NAME) on port $BACKEND_PORT..."
 pm2 start "$BACKEND_DIR/venv/bin/python" \
@@ -38,21 +33,34 @@ pm2 start "$BACKEND_DIR/venv/bin/python" \
   -- manage.py runserver 0.0.0.0:$BACKEND_PORT
 
 # -------------------------
-# Start frontend (Expo Web)
+# 📱 Start Mobile (Expo web)
 # -------------------------
-echo "🎨 Starting Expo frontend ($FRONTEND_NAME) on port $FRONTEND_PORT..."
+echo "📱 Starting Expo mobile ($MOBILE_NAME) on port $MOBILE_PORT..."
 pm2 start bash \
-  --name "$FRONTEND_NAME" \
-  --cwd "$FRONTEND_DIR" \
-  -- -c "npx expo start --web --port $FRONTEND_PORT --host lan"
+  --name "$MOBILE_NAME" \
+  --cwd "$MOBILE_DIR" \
+  -- -c "npx expo start --web --port $MOBILE_PORT --host localhost"
 
 # -------------------------
-# Save PM2 state
+# 🌐 Start Web (landing — static)
+# -------------------------
+echo "🌐 Starting landing ($WEB_NAME) on port $WEB_PORT..."
+pm2 start bash \
+  --name "$WEB_NAME" \
+  --cwd "$LANDING_DIR" \
+  -- -c "npx serve -l $WEB_PORT"
+
+# -------------------------
+# 💾 Save PM2 state
 # -------------------------
 pm2 save
 
 # -------------------------
-# Show status
+# 📊 Status
 # -------------------------
 echo "✅ FAMSYNC DEV running:"
 pm2 list
+echo ""
+echo "  famsync-api-dev  -> https://famsync-api-dev.spotynet.com  (localhost:$BACKEND_PORT)"
+echo "  famsync-dev      -> https://famsync-dev.spotynet.com      (localhost:$MOBILE_PORT)"
+echo "  famsync-web-dev  -> https://famsync-web-dev.spotynet.com  (localhost:$WEB_PORT)"
