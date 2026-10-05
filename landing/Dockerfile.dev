@@ -1,0 +1,11 @@
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+RUN npm install -g serve@14
+
+COPY index.html ./
+
+EXPOSE 3013
+
+CMD ["serve", "-l", "tcp://0.0.0.0:3013", "."]

@@ -1,66 +1,61 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# FamSync DEVELOPMENT — shared EC2 (project nginx on 127.0.0.1:3022).
+#
+# Once: sudo ./deploy/apply-nginx.sh
+# Day-to-day: ./dev.sh
+# Prod (dedicated): ./deploy.sh
+set -euo pipefail
 
-echo "🚀 Starting FAMSYNC DEV (api + mobile + web)"
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
 
-BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
-BACKEND_DIR="$BASE_DIR/backend"
-MOBILE_DIR="$BASE_DIR/mobile"
-LANDING_DIR="$BASE_DIR/landing"
+# === Dev domains (committed) ===
+FAMSYNC_MOBILE_HOST="famsync-dev.spotynet.com"
+FAMSYNC_API_HOST="famsync-api-dev.spotynet.com"
+FAMSYNC_WEB_HOST="famsync-web-dev.spotynet.com"
 
-BACKEND_NAME="famsync-api-dev"
-MOBILE_NAME="famsync-dev"
-WEB_NAME="famsync-web-dev"
+export FAMSYNC_MOBILE_HOST FAMSYNC_API_HOST FAMSYNC_WEB_HOST
+export EXPO_PUBLIC_API_URL="https://${FAMSYNC_API_HOST}"
+# Shared RDS (same as prior PM2 script). Prefer fixing backend/.env when writable.
+export DATABASE_URL="${DATABASE_URL:-postgres://famsync:famsync_dev_pass@spotynet-dev.cdoeasam0eby.us-east-1.rds.amazonaws.com:5432/famsync_db}"
 
-BACKEND_PORT=3006
-MOBILE_PORT=3005
-WEB_PORT=3013
+compose() {
+  if docker info >/dev/null 2>&1; then
+    docker compose "$@"
+  elif sudo -n docker info >/dev/null 2>&1; then
+    sudo docker compose "$@"
+  else
+    echo "Docker needs privileges. Prefer: sudo usermod -aG docker \$USER && newgrp docker" >&2
+    sudo docker compose "$@"
+  fi
+}
 
-# -------------------------
-# 🧹 Clean old processes
-# -------------------------
-echo "🧹 Cleaning old PM2 processes..."
-pm2 delete $BACKEND_NAME 2>/dev/null
-pm2 delete $MOBILE_NAME 2>/dev/null
-pm2 delete $WEB_NAME 2>/dev/null
+if [[ ! -f backend/.env ]]; then
+  echo "Missing backend/.env" >&2
+  exit 1
+fi
 
-# -------------------------
-# 🐍 Start Backend (Django)
-# -------------------------
-echo "🐍 Starting Django backend ($BACKEND_NAME) on port $BACKEND_PORT..."
-pm2 start "$BACKEND_DIR/venv/bin/python" \
-  --name "$BACKEND_NAME" \
-  --cwd "$BACKEND_DIR" \
-  -- manage.py runserver 0.0.0.0:$BACKEND_PORT
+echo "Cleaning old FamSync PM2 processes (if any)..."
+pm2 delete famsync-api-dev 2>/dev/null || true
+pm2 delete famsync-dev 2>/dev/null || true
+pm2 delete famsync-web-dev 2>/dev/null || true
+pm2 save 2>/dev/null || true
 
-# -------------------------
-# 📱 Start Mobile (Expo web)
-# -------------------------
-echo "📱 Starting Expo mobile ($MOBILE_NAME) on port $MOBILE_PORT..."
-pm2 start bash \
-  --name "$MOBILE_NAME" \
-  --cwd "$MOBILE_DIR" \
-  -- -c "npx expo start --web --port $MOBILE_PORT --host localhost"
-
-# -------------------------
-# 🌐 Start Web (landing — static)
-# -------------------------
-echo "🌐 Starting landing ($WEB_NAME) on port $WEB_PORT..."
-pm2 start bash \
-  --name "$WEB_NAME" \
-  --cwd "$LANDING_DIR" \
-  -- -c "npx serve -l $WEB_PORT"
-
-# -------------------------
-# 💾 Save PM2 state
-# -------------------------
-pm2 save
-
-# -------------------------
-# 📊 Status
-# -------------------------
-echo "✅ FAMSYNC DEV running:"
-pm2 list
-echo ""
-echo "  famsync-api-dev  -> https://famsync-api-dev.spotynet.com  (localhost:$BACKEND_PORT)"
-echo "  famsync-dev      -> https://famsync-dev.spotynet.com      (localhost:$MOBILE_PORT)"
-echo "  famsync-web-dev  -> https://famsync-web-dev.spotynet.com  (localhost:$WEB_PORT)"
+echo "Starting FamSync DEV (compose.yaml → 127.0.0.1:3022)..."
+echo "  mobile:  ${FAMSYNC_MOBILE_HOST}"
+echo "  api:     ${FAMSYNC_API_HOST}"
+echo "  landing: ${FAMSYNC_WEB_HOST}"
+compose -f compose.yaml up -d --build
+echo
+compose -f compose.yaml ps
+echo
+echo "DEV URLs:"
+echo "  https://${FAMSYNC_MOBILE_HOST}/"
+echo "  https://${FAMSYNC_API_HOST}/"
+echo "  https://${FAMSYNC_WEB_HOST}/"
+echo
+echo "Logs: docker compose -f compose.yaml logs -f"
+echo "Stop: docker compose -f compose.yaml down"
+echo
+echo "If host nginx still points at 3005/3006/3013:"
+echo "  sudo ./deploy/apply-nginx.sh"

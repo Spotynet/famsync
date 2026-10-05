@@ -1,0 +1,63 @@
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    env_file:
+      - ./backend/.env
+    environment:
+      # Prefer shell/export (./dev.sh) so Docker can reach RDS; overrides localhost in .env
+      DATABASE_URL: ${DATABASE_URL:-}
+    volumes:
+      - ./backend:/app
+    expose:
+      - "3006"
+    restart: unless-stopped
+
+  mobile:
+    build:
+      context: ./mobile
+      dockerfile: Dockerfile.dev
+    env_file:
+      - ./mobile/.env
+    environment:
+      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-https://famsync-api-dev.spotynet.com}
+    volumes:
+      - ./mobile:/app
+      - mobile_node_modules:/app/node_modules
+    expose:
+      - "3005"
+    stdin_open: true
+    tty: true
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  landing:
+    build:
+      context: ./landing
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./landing:/app
+    expose:
+      - "3013"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "127.0.0.1:3022:80"
+    environment:
+      FAMSYNC_MOBILE_HOST: ${FAMSYNC_MOBILE_HOST:-famsync-dev.spotynet.com}
+      FAMSYNC_API_HOST: ${FAMSYNC_API_HOST:-famsync-api-dev.spotynet.com}
+      FAMSYNC_WEB_HOST: ${FAMSYNC_WEB_HOST:-famsync-web-dev.spotynet.com}
+    volumes:
+      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      - mobile
+      - landing
+      - api
+    restart: unless-stopped
+
+volumes:
+  mobile_node_modules:
